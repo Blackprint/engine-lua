@@ -1,0 +1,12 @@
+{
+	"scripts": {
+		"start": "node ./tools/bundler.js ./src ./dist/Blackprint.lua",
+		"compile-example": "node ./tools/bundler.js ./example/BPNode/Example ./dist/Example.lua",
+		"simple-lune": "lune run ./example/simple.lua",
+		"complex-lune": "lune run ./example/complex.lua",
+		"event-lune": "lune run ./example/event.lua",
+		"environment-lune": "lune run ./example/environment.lua",
+		"luau": "luau ./example/simple.lua"
+	},
+	"dependencies":{"chokidar":"^4.0.3"}
+}

@@ -1,0 +1,13 @@
+name = "blackprint/engine"
+version = "0.9.3"
+authors = ["Blackprint"]
+license = "MIT"
+
+[target]
+environment = "luau"
+
+[indices]
+default = "https://github.com/pesde-pkg/index"
+
+[wally_indices]
+default = "https://github.com/UpliftGames/wally-index"
