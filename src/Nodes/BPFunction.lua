@@ -65,16 +65,17 @@ function BPFunction.new(id, options, instance)
     local temp = obj
     local uniqId = 0
 
-    local function nodeContruct(instance)
+    local function nodeContruct(instance_)
         BPFunctionNode.input = obj.input
         BPFunctionNode.output = obj.output
         BPFunctionNode.namespace = id
         BPFunctionNode.type = 'function'
 
-        local node = BPFunctionNode.new(instance)
+        instance_.rootInstance = nil
+        local node = BPFunctionNode.new(instance_)
         local iface = node.iface
 
-        instance.bpFunction = temp
+        instance_.bpFunction = temp
         node.bpFunction = temp
         iface.title = temp.title
         iface.type = 'function'

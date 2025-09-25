@@ -423,7 +423,7 @@ function Engine:createNode(namespace, options, nodes)
 		func = self.functions[namespace:sub(7)]
 
 		if func ~= nil then
-			funcNode = func:node(self)
+			funcNode = func.node(self)
 		end
 	end
 
