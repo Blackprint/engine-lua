@@ -1,10 +1,17 @@
 name = "blackprint/engine"
-version = "0.9.3"
+version = "0.9.2"
 authors = ["Blackprint"]
 license = "MIT"
+includes = [
+  "pesde.toml",
+  "README.md",
+  "LICENSE",
+  "dist/*.lua",
+]
 
 [target]
 environment = "luau"
+lib = "dist/Blackprint.lua"
 
 [indices]
 default = "https://github.com/pesde-pkg/index"
