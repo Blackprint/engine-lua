@@ -13,11 +13,11 @@ function Timer.setTimeout(callback, delay)
 		return
 	end
 
-    local running = true
-    Timer.task.delay(delay / 1e3, function()
+	local running = true
+	Timer.task.delay(delay / 1e3, function()
 		if running then callback() end
-    end)
-    return function() running = false end
+	end)
+	return function() running = false end
 end
 
 -- setInterval(callback: () → (), interval: number) → cancel: () → ()
@@ -27,15 +27,15 @@ function Timer.setInterval(callback, msInterval)
 		return
 	end
 
-    local running = true
-    Timer.task.spawn(function()
+	local running = true
+	Timer.task.spawn(function()
 		local interval = msInterval / 1e3
-        while running do
-            Timer.task.wait(interval)
-            if running then callback() end
-        end
-    end)
-    return function() running = false end
+		while running do
+			Timer.task.wait(interval)
+			if running then callback() end
+		end
+	end)
+	return function() running = false end
 end
 
 local function clearTimer(callback)

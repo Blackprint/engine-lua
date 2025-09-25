@@ -11,83 +11,83 @@ local Interface = {}
 Interface.__index = Class.extends(Interface, CustomEvent)
 
 function Interface.new(node)
-    local iface = setmetatable(CustomEvent.new(), Interface)
-    iface.node = node
-    return iface
+	local iface = setmetatable(CustomEvent.new(), Interface)
+	iface.node = node
+	return iface
 end
 
 -- Prepare the interface with node setup
 function Interface:_prepare_(clazz)
-    local node = self.node
-    local ref = References.new()
-    node.ref = ref
-    self.ref = ref
+	local node = self.node
+	local ref = References.new()
+	node.ref = ref
+	self.ref = ref
 
-    node.routes = RoutePort.new(self)
+	node.routes = RoutePort.new(self)
 
-    if clazz.output then
-        node.output = PortLink.new(node, 'output', clazz.output)
-        ref.IOutput = self.output
-        ref.Output = node.output
-    end
+	if clazz.output then
+		node.output = PortLink.new(node, 'output', clazz.output)
+		ref.IOutput = self.output
+		ref.Output = node.output
+	end
 
-    if clazz.input then
-        node.input = PortLink.new(node, 'input', clazz.input)
-        ref.IInput = self.input
-        ref.Input = node.input
-    end
+	if clazz.input then
+		node.input = PortLink.new(node, 'input', clazz.input)
+		ref.IInput = self.input
+		ref.Input = node.input
+	end
 end
 
 -- Create a new port
 function Interface:_newPort(portName, type, def_, which, haveFeature)
-    return PortClass.new(portName, type, def_, which, self, haveFeature)
+	return PortClass.new(portName, type, def_, which, self, haveFeature)
 end
 
 -- Initialize port switches
 function Interface:_initPortSwitches(portSwitches)
-    for key, value in pairs(portSwitches) do
-        local ref = self.output[key]
+	for key, value in pairs(portSwitches) do
+		local ref = self.output[key]
 
-        -- if (value & 1) == 1 then
+		-- if (value & 1) == 1 then
 		if Bit32.bitAnd(value, 1) == 1 then
-            Port.StructOf_split(ref)
-        end
+			Port.StructOf_split(ref)
+		end
 
-        -- if (value & 2) == 2 then
+		-- if (value & 2) == 2 then
 		if Bit32.bitAnd(value, 2) == 2 then
-            ref.allowResync = true
-        end
-    end
+			ref.allowResync = true
+		end
+	end
 end
 
 -- Import input port data
 function Interface:_importInputs(ports)
-    -- Load saved port data value
-    local inputs = self.input
-    for key, val in pairs(ports) do
-        if inputs[key] then
-            local port = inputs[key]
-            port.default = val
-        end
-    end
+	-- Load saved port data value
+	local inputs = self.input
+	for key, val in pairs(ports) do
+		if inputs[key] then
+			local port = inputs[key]
+			port.default = val
+		end
+	end
 end
 
 -- Initialize function node interface
 function Interface:_BpFnInit()
-    -- Placeholder for function node specific initialization
+	-- Placeholder for function node specific initialization
 end
 
 -- Interface lifecycle methods
 function Interface:init()
-    -- Placeholder for interface initialization
+	-- Placeholder for interface initialization
 end
 
 function Interface:destroy()
-    -- Placeholder for interface destruction
+	-- Placeholder for interface destruction
 end
 
 function Interface:imported(data)
-    -- Placeholder for post-import processing
+	-- Placeholder for post-import processing
 end
 
 -- Interface properties
