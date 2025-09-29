@@ -112,11 +112,17 @@ function Port:_callAll()
 	else
 		local node = self.iface.node
 		if node.disablePorts then return end
+
 		local executionOrder = node.instance.executionOrder
+		if executionOrder.stop or executionOrder._rootExecOrder.stop then return end
 
 		for _, cable in ipairs(self.cables) do
 			local target = cable.input
 			if not target then continue end
+
+			if not executionOrder.stepMode then
+				cable:visualizeFlow()
+			end
 
 			if target._name then
 				target.iface.parentInterface.node.iface.output[target._name.name]:_callAll()

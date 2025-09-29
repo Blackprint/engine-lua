@@ -3,7 +3,7 @@ local Cable = require("@src/Constructor/Cable.lua")
 local Enums = require("@src/Nodes/Enums.lua")
 local CustomEvent = require("@src/Constructor/CustomEvent.lua")
 
-local RoutePort = {}
+local RoutePort = setmetatable({}, { __index = CustomEvent })
 RoutePort.__index = RoutePort
 
 function RoutePort.new(iface)
@@ -14,6 +14,7 @@ function RoutePort.new(iface)
 	this.disabled = false
 	this.isRoute = true
 	this.source = 'route'
+	this.name = 'BPRoute'
 	this.iface = iface
 	this.type = Types.Route
 	this._isPaused = false
@@ -72,13 +73,18 @@ end
 -- Route input (async)
 function RoutePort:routeIn(_cable, _force)
 	local node = self.iface.node
+	if node.disablePorts then return end
+
+	local executionOrder = node.instance.executionOrder
+	if executionOrder.stop or executionOrder._rootExecOrder.stop then return end
 
 	-- Add to execution list if the OrderedExecution is in Step Mode
-	local executionOrder = node.instance.executionOrder
 	if executionOrder.stepMode and _cable and not _force then
 		executionOrder:_addStepPending(_cable, 1)
 		return
 	end
+
+	_cable:visualizeFlow()
 
 	if self.iface._enum ~= Enums.BPFnInput then
 		node:_bpUpdate()
@@ -90,16 +96,13 @@ end
 -- Route output (async)
 function RoutePort:routeOut()
 	if self.disableOut then return end
+	if self.iface.node.disablePorts then return end
 	if not self.out then
 		if self.iface._enum == Enums.BPFnOutput then
 			return self.iface.parentInterface.node.routes:routeIn()
 		end
 		return
 	end
-
-	-- node = this.iface.node
-	-- if(!node.instance.executionOrder.stepMode):
-	-- 	this.out.visualizeFlow()
 
 	local targetRoute = self.out.input
 	if not targetRoute then return end

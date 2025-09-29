@@ -13,6 +13,7 @@ local InputIFaceData = {
 		if key == "value" then
 			this._data.value = val
 			this._iface:changed(val)
+			this._iface.node.routes:routeOut()
 		else
 			rawset(this, key, val)
 		end
@@ -50,20 +51,19 @@ Blackprint.registerNode('Example/Input/Simple', function(class, extends)
 		if not data then return end
 
 		local val = data.value
-		utils.colorLog("Input/Simple:", "Old data: " .. tostring(self.iface.data.value))
-		if val then utils.colorLog("Input/Simple:", "Imported data: " .. tostring(val)) end
-
-		self.iface.data.value = val
+		if val ~= nil then
+			utils.colorLog("Input/Simple:", "Old data: " .. tostring(self.iface.data.value))
+			if val then utils.colorLog("Input/Simple:", "Imported data: " .. tostring(val)) end
+			self.iface.data.value = val
+		end
 	end
 
 	-- Remote sync in
 	function class:syncIn(id, data)
 		if id == 'data' then
 			self.iface.data.value = data.value
-			self.iface:changed(data.value)
 		elseif id == 'value' then
 			self.iface.data.value = data
-			self.iface:changed(data)
 		end
 	end
 end)

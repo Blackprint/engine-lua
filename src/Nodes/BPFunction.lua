@@ -120,7 +120,7 @@ end
 
 function BPFunction:_onVariableRenamed(ev)
 	local instance = self.structure.instance
-	if ev.scope == VarScope.public or ev.scope == VarScope.shared then
+	if ev.scope == VarScope.Public or ev.scope == VarScope.Shared then
 		local list_ = {}
 
 		if instance['BP/Var/Get'] then
@@ -211,10 +211,10 @@ function BPFunction:_onFuncChanges(eventName, obj, fromNode)
 			-- Skip event that also triggered when deleting a node
 			if input.iface._bpDestroy or output.iface._bpDestroy then continue end
 
-			local inputIface = nodeInstance.ifaceList[Utils.findFromList(ifaceList, input.iface)]
+			local inputIface = nodeInstance.ifaceList[ifaceList:indexOf(input.iface)]
 			if not inputIface then error("Failed to get node input iface index") end
 
-			local outputIface = nodeInstance.ifaceList[Utils.findFromList(ifaceList, output.iface)]
+			local outputIface = nodeInstance.ifaceList[ifaceList:indexOf(output.iface)]
 			if not outputIface then error("Failed to get node output iface index") end
 
 			if inputIface.namespace ~= input.iface.namespace then
@@ -265,7 +265,7 @@ function BPFunction:_onFuncChanges(eventName, obj, fromNode)
 				data = iface.data
 			})
 		elseif eventName == 'node.delete' then
-			local index = Utils.findFromList(fromNode.iface.bpInstance.ifaceList, obj.iface)
+			local index = fromNode.iface.bpInstance.ifaceList:indexOf(obj.iface)
 			if not index then error("Failed to get node index") end
 
 			local iface = nodeInstance.ifaceList[index]
@@ -288,10 +288,10 @@ function BPFunction:createVariable(id, options)
 		error("Slash symbol is reserved character and currently can't be used for creating path")
 	end
 
-	if options.scope == VarScope.private then
+	if options.scope == VarScope.Private then
 		if not Utils.findFromList(self.privateVars, id) then
 			table.insert(self.privateVars, id)
-			local eventData = {bpFunction = self, scope = VarScope.private, id = id}
+			local eventData = {bpFunction = self, scope = VarScope.Private, id = id}
 			self:emit('variable.new', eventData)
 			self.rootInstance:emit('variable.new', eventData)
 		end
@@ -302,7 +302,7 @@ function BPFunction:createVariable(id, options)
 			vars[id] = BPVariable.new(id)
 		end
 		return
-	elseif options.scope == VarScope.public then
+	elseif options.scope == VarScope.Public then
 		error("Can't create public variable from a function")
 	end
 
@@ -334,13 +334,13 @@ function BPFunction:renameVariable(from_, to, scopeId)
 
 	to = Utils._stringCleanSymbols(to)
 
-	if scopeId == VarScope.private then
+	if scopeId == VarScope.Private then
 		local index = Utils.findFromList(self.privateVars, from_)
 		if index == -1 then
 			error("Private variable with name '" .. from_ .. "' was not found on '" .. self.id .. "' function")
 		end
 		self.privateVars[index] = to
-	elseif scopeId == VarScope.shared then
+	elseif scopeId == VarScope.Shared then
 		local varObj = self.variables[from_]
 		if not varObj then
 			error("Shared variable with name '" .. from_ .. "' was not found on '" .. self.id .. "' function")
@@ -360,7 +360,7 @@ function BPFunction:renameVariable(from_, to, scopeId)
 
 	-- Update references in all function instances
 	local lastInstance = nil
-	if scopeId == VarScope.shared then
+	if scopeId == VarScope.Shared then
 		local used = self.variables[to].used
 		for _, iface in ipairs(used) do
 			iface.title = to
@@ -376,14 +376,14 @@ function BPFunction:renameVariable(from_, to, scopeId)
 end
 
 function BPFunction:deleteVariable(namespace, scopeId)
-	if scopeId == VarScope.public then
+	if scopeId == VarScope.Public then
 		return self.rootInstance:deleteVariable(namespace, scopeId)
 	end
 
 	local used = self.used
 	local path = Utils._stringSplit(namespace, '/')
 
-	if scopeId == VarScope.private then
+	if scopeId == VarScope.Private then
 		local index = Utils.findFromList(self.privateVars, namespace)
 		if index == -1 then return end
 		table.remove(self.privateVars, index)
@@ -396,7 +396,7 @@ function BPFunction:deleteVariable(namespace, scopeId)
 			local varsObject = instance.variables
 			local oldObj = Utils.getDeepProperty(varsObject, path)
 			if oldObj then
-				if scopeId == VarScope.private then
+				if scopeId == VarScope.Private then
 					oldObj:destroy()
 				end
 				Utils.deleteDeepProperty(varsObject, path, true)
@@ -404,7 +404,7 @@ function BPFunction:deleteVariable(namespace, scopeId)
 				instance:emit('variable.deleted', eventData)
 			end
 		end
-	elseif scopeId == VarScope.shared then
+	elseif scopeId == VarScope.Shared then
 		local oldObj = Utils.getDeepProperty(self.variables, path)
 		used[1].bpInstance:deleteVariable(namespace, scopeId)
 
@@ -442,7 +442,9 @@ function BPFunction:renamePort(which, fromName, toName)
 		end
 
 		local ifaces = iface.bpInstance.ifaceList
-		for _, proxyVar in ipairs(ifaces) do
+		for i = 0, ifaces.length-1 do
+			local proxyVar = ifaces[i]
+
 			if (which == 'output' and proxyVar.namespace ~= "BP/FnVar/Output") or
 			   (which == 'input' and proxyVar.namespace ~= "BP/FnVar/Input") then
 				continue
@@ -502,15 +504,6 @@ function BPFunction:invoke(input)
 		iface.bpInstance.executionOrder.stop = true -- Disable execution order and force to use route cable
 		iface.bpInstance.pendingRender = true
 		iface.isDirectInvoke = true -- Mark this node as direct invoke, for some optimization
-
-		-- For sketch instance, we will remove it from sketch visibility
-		local sketchScope = iface.node.instance.scope
-		if sketchScope then
-			local list_ = sketchScope('nodes').list
-			if Utils.findFromList(list_, iface) then
-				table.remove(list_, Utils.findFromList(list_, iface))
-			end
-		end
 
 		-- Wait until ready - using event listener instead of Promise
 		local ready_event = false
@@ -576,7 +569,7 @@ function BPFunction:addPrivateVars(id)
 
 		local evData = {
 			instance = self,
-			scope = VarScope.private,
+			scope = VarScope.Private,
 			id = id,
 		}
 		self:emit('variable.new', evData)

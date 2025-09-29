@@ -27,7 +27,7 @@ let lib = {/*
 if(!rootPath || !distPath) throw new Error("Required CLI parameter was not found");
 
 chokidar.watch(rootPath, {
-	persistent: true,
+	persistent: process.argv[4] === '--compile' ? false : true,
 	ignored: /\.txt|\.git/,
 	atomic: true,
 	depth: 5,

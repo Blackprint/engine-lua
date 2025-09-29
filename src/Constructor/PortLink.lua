@@ -68,15 +68,17 @@ function PortLink:__index(key)
 				local node = output.iface.node
 				local executionOrder = node.instance.executionOrder
 
+				if executionOrder.stop or executionOrder._rootExecOrder.stop then return end
 				if executionOrder.stepMode and node.request then
 					executionOrder:_addStepPending(cable, 3)
 					return
 				end
 
-				output.iface.node:request(cable)
+				node:request(cable)
 			end
 
 			-- print(f"\n1. {port.name} . {output.name} ({output.value})")
+			cable:visualizeFlow()
 
 			portIface._requesting = false
 
@@ -113,10 +115,20 @@ function PortLink:__index(key)
 
 			-- Request the data first
 			if not output.value then
-				output.iface.node:request(cable)
+				local node = output.iface.node
+				local executionOrder = node.instance.executionOrder
+
+				if executionOrder.stop or executionOrder._rootExecOrder.stop then return end
+				if executionOrder.stepMode and node.request then
+					executionOrder:_addStepPending(cable, 3)
+					return
+				end
+
+				node:request(cable)
 			end
 
 			-- print(f"\n2. {port.name} . {output.name} ({output.value})")
+			cable:visualizeFlow()
 
 			if isNotArrayPort then
 				local finalVal = output.value

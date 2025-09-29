@@ -123,41 +123,41 @@ function Utils.determinePortType(val, that)
 		error(string.format("Port type can't be None, error when processing: %s, %s port", that._iface.namespace, that._which))
 	end
 
-	local type = val
+	local type_ = val
 	local def_ = nil
 	local feature = nil
 
-	if typeof(val) == "table" then
+	if type(val) == "table" then
 		feature = val.feature
 		if feature == Port.Trigger then
 			def_ = val.func
-			type = val.type
+			type_ = val.type
 		elseif feature == Port.ArrayOf then
-			type = val.type
-			if type == Types.Any then
+			type_ = val.type
+			if type_ == Types.Any then
 				def_ = nil
 			else
 				def_ = {}
 			end
 		elseif feature == Port.Union then
-			type = val.type
+			type_ = val.type
 		elseif feature == Port.Default then
-			type = val.type
+			type_ = val.type
 			def_ = val.value
 		end
 	end
 
 	-- Give default value for each primitive type
-	if type == "number" then
+	if type_ == "number" then
 		def_ = 0
-	elseif type == "boolean" then
+	elseif type_ == "boolean" then
 		def_ = false
-	elseif type == "string" then
+	elseif type_ == "string" then
 		def_ = ''
-	elseif type == "table" then
+	elseif type_ == "table" then
 		def_ = {}
 	end
-	return type, def_, feature
+	return type_, def_, feature
 end
 
 -- Find an item in a list and return its index

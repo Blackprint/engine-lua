@@ -94,9 +94,17 @@ function Cable:_print()
 		self.input.name, self.input.iface.title))
 end
 
+function Cable:visualizeFlow()
+	local instance = self.owner.iface.node.instance
+	if instance._remote ~= nil then
+		instance:_emit('_flowEvent', {cable = self})
+	end
+end
+
 -- Cable value property
 function Cable:value()
 	if self._disconnecting then return self.input.default end
+	self:visualizeFlow()
 	return self.output.value
 end
 

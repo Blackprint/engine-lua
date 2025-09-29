@@ -13,13 +13,25 @@ local CustomEvent = require("@src/Constructor/CustomEvent.lua")
 
 -- For internal library use only
 local VarScope = {}
-VarScope.public = 0
-VarScope.private = 1
-VarScope.shared = 2
+VarScope.Public = 0
+VarScope.Private = 1
+VarScope.Shared = 2
 
 -- used for instance.createVariable
 local BPVariable = setmetatable({}, { __index = CustomEvent })
-BPVariable.__index = BPVariable
+BPVariable.__index = function(this, key)
+	if key == 'value' then return rawget(this, '_value') end
+	return rawget(this, key) or rawget(CustomEvent, key)
+end
+BPVariable.__newindex = function(this, key, val)
+	if key == 'value' then
+		if rawget(this, '_value') == val then return end
+		rawset(this, '_value', val)
+		this:emit('value')
+	else
+		rawset(this, key, val)
+	end
+end
 
 function BPVariable.new(id, options)
 	if options == nil then options = {} end
@@ -39,20 +51,9 @@ function BPVariable.new(id, options)
 
 	this.totalSet = 0
 	this.totalGet = 0
-	this._value = nil
+	this.value = nil
 
 	return this
-end
-
-function BPVariable:value()
-	return self._value
-end
-
-function BPVariable:value_set(val)
-	if self._value == val then return end
-
-	self._value = val
-	self:emit('value')
 end
 
 function BPVariable:destroy()
@@ -71,7 +72,7 @@ registerNode('BP/Var/Set', function(class, extends)
 		-- Specify data field from here to make it enumerable and exportable
 		iface.data = {
 			name = '',
-			scope = VarScope.public
+			scope = VarScope.Public
 		}
 
 		iface.title = 'VarSet'
@@ -97,7 +98,7 @@ registerNode('BP/Var/Get',  function(class, extends)
 		-- Specify data field from here to make it enumerable and exportable
 		iface.data = {
 			name = '',
-			scope = VarScope.public
+			scope = VarScope.Public
 		}
 
 		iface.title = 'VarGet'
@@ -140,13 +141,13 @@ function BPVarGetSet:changeVar(name, scopeId)
 		bpFunction = bpFunction.node.bpFunction
 	end
 
-	if scopeId == VarScope.public then
+	if scopeId == VarScope.Public then
 		if bpFunction and bpFunction.rootInstance then
 			scope = bpFunction.rootInstance.variables
 		else
 			scope = self.node.instance.variables
 		end
-	elseif scopeId == VarScope.shared then
+	elseif scopeId == VarScope.Shared then
 		if bpFunction then
 			scope = bpFunction.variables
 		else
@@ -160,11 +161,11 @@ function BPVarGetSet:changeVar(name, scopeId)
 
 	if not construct then
 		local _scopeName
-		if scopeId == VarScope.public then
+		if scopeId == VarScope.Public then
 			_scopeName = 'public'
-		elseif scopeId == VarScope.private then
+		elseif scopeId == VarScope.Private then
 			_scopeName = 'private'
-		elseif scopeId == VarScope.shared then
+		elseif scopeId == VarScope.Shared then
 			_scopeName = 'shared'
 		else
 			_scopeName = 'unknown'
@@ -311,12 +312,12 @@ registerInterface('BPIC/BP/Var/Get', function(class, extends) extends(BPVarGetSe
 			self._onChanged = callback
 		else
 			self._eventListen = 'value'
-			local callback = function(ev) ref['Val'] = temp._value end
+			local callback = function(ev) ref['Val'] = temp.value end
 			self._onChanged = callback
 		end
 
 		if temp.type ~= Types.Trigger then
-			node.output['Val'] = temp._value
+			node.output['Val'] = temp.value
 		end
 
 		temp:on(self._eventListen, self._onChanged)

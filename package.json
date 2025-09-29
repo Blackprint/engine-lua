@@ -1,7 +1,8 @@
 {
 	"scripts": {
 		"start": "node ./tools/bundler.js ./src ./dist/Blackprint.lua",
-		"compile-example": "node ./tools/bundler.js ./example/BPNode/Example ./dist/Example.lua",
+		"compile": "node ./tools/bundler.js ./src ./dist/Blackprint.lua --compile",
+		"watch-example": "node ./tools/bundler.js ./example/BPNode/Example ./dist/Example.lua",
 		"simple-lune": "lune run ./example/simple.lua",
 		"complex-lune": "lune run ./example/complex.lua",
 		"event-lune": "lune run ./example/event.lua",

@@ -293,7 +293,7 @@ function OrderedExecution:_checkStepPending()
 		local currentIface = cable.output.iface
 		local current = currentIface.node
 
-		-- cable.visualizeFlow()
+		-- cable:visualizeFlow()
 		currentIface._requesting = true
 		current:request(cable)
 		currentIface._requesting = false
@@ -347,14 +347,14 @@ function OrderedExecution:_checkStepPending()
 		local cable = table.remove(_pTrigger, 1)
 		local current = cable.input
 
-		-- cable.visualizeFlow()
+		cable:visualizeFlow()
 		current:_call(cable)
 
 		self:_emitNextExecution()
 	elseif #_pRoute > 0 then
 		local cable = table.remove(_pRoute, 1)
 
-		-- cable.visualizeFlow()
+		cable:visualizeFlow()
 		cable.input:routeIn(cable, true)
 
 		self:_emitNextExecution()
@@ -375,7 +375,7 @@ function OrderedExecution:next(force)
 	end
 	if self.stepMode then self.pause = true end
 	if self.pause and not force then return end
-	if #self.instance.ifaceList == 0 then return end
+	if self.instance.ifaceList.length == 0 then return end
 
 	if self:_checkStepPending() then return end
 

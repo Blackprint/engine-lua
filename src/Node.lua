@@ -55,7 +55,7 @@ function Node:createPort(which, name, type_)
 		error("Type is required for creating new port")
 	end
 
-	if typeof(name) ~= "string" then
+	if type(name) ~= "string" then
 		name = tostring(name)
 	end
 
@@ -67,7 +67,7 @@ function Node:createPort(which, name, type_)
 		type_ == Types.Trigger or
 
 		-- PortFeature
-		(typeof(type_) == "table" and type_.feature and (
+		(type(type_) == "table" and type_.feature and (
 			type_.feature == PortFeature.ArrayOf or
 			type_.feature == PortFeature.Default or
 			type_.feature == PortFeature.Trigger or
@@ -163,7 +163,7 @@ function Node:_bpUpdate(cable)
 		end)
 
 		if not success then
-			print("Error in node update: " .. tostring(result))
+			print("Error in node (" .. thisIface.namespace .. ") update: " .. tostring(result))
 		end
 
 		self._bpUpdating = false

@@ -115,7 +115,7 @@ local function createVariable(namespace, options)
 
 	-- Lazy load, only use when being used in this func
 	local temp = require("@src/Nodes/BPVariable.lua").BPVariable.new(namespace, options)
-	temp._scope = require("@src/Nodes/BPVariable.lua").VarScope.public
+	temp._scope = require("@src/Nodes/BPVariable.lua").VarScope.Public
 	temp.isShared = true
 
 	return temp

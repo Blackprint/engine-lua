@@ -7,7 +7,6 @@ local Types = require("@src/Types.lua")
 local Environment = require("@src/Environment.lua")
 local Utils = require("@src/Utils.lua")
 local Internal = require("@src/Internal.lua")
-local Temp = require("@src/Interface.lua").Temp
 local Port = require("@src/Port/PortFeature.lua")
 local CustomEvent = require("@src/Constructor/CustomEvent.lua")
 local OrderedExecution = require("@src/Constructor/OrderedExecution.lua")
@@ -17,6 +16,9 @@ local Event = require("@src/Event.lua")
 local JSON = require("@src/LuaUtils/JSON.lua")
 local Bit32 = require("@src/LuaUtils/Bit32.lua")
 local Class = require("@src/LuaUtils/Class.lua")
+local Array = require("@src/LuaUtils/Array.lua")
+
+local NodePortList = {'input', 'output'}
 
 local Engine = {}
 Engine.__index = Class.extends(Engine, CustomEvent)
@@ -25,8 +27,8 @@ function Engine.new()
 	local instance = setmetatable(CustomEvent.new(), Engine)
 
 	instance.iface = {} -- { id => IFace }
-	instance.ifaceList = {}
-	instance.disablePorts = false
+	instance.ifaceList = Array.new() -- Note: index start from 0
+	instance.disablePorts = false -- true = disable port data sync and disable route
 	instance.throwOnError = true
 	instance._settings = {}
 
@@ -64,10 +66,10 @@ end
 
 function Engine:deleteNode(iface)
 	local list = self.ifaceList
-	local i = Utils.findFromList(list, iface)
+	local i = list:indexOf(iface)
 
 	if i ~= nil then
-		table.remove(list, i)
+		list:splice(i, 1)
 	else
 		if self.throwOnError then
 			error("Node to be deleted was not found")
@@ -91,7 +93,7 @@ function Engine:deleteNode(iface)
 	iface.node:destroy()
 	iface:destroy()
 
-	local check = Temp.list
+	local check = NodePortList
 	for _, val in ipairs(check) do
 		if not iface[val] then continue end
 
@@ -129,8 +131,9 @@ function Engine:clearNodes()
 	if self._locked_ then error("This instance was locked") end
 	self._destroying = true
 
-	local list = self.ifaceList
-	for _, iface in ipairs(list) do
+	local ifaces = self.ifaceList
+	for i = 0, ifaces.length-1 do
+		local iface = ifaces[i]
 		if iface == nil then continue end
 
 		local eventData = {
@@ -144,7 +147,7 @@ function Engine:clearNodes()
 		self:_emit('node.deleted', eventData)
 	end
 
-	self.ifaceList = {}
+	self.ifaceList = Array.new()
 	self.iface = {}
 	self.ref = {}
 
@@ -180,7 +183,7 @@ function Engine:importJSON(json, options)
 		self:clearNodes()
 	end
 
-	self:emit("json.importing", { appendMode = options.appendMode, raw = json })
+	self:emit("json.importing", { appendMode = options.appendMode, data = json })
 
 	if json.environments and not options.noEnv then
 		Environment.imports(json.environments)
@@ -206,7 +209,7 @@ function Engine:importJSON(json, options)
 
 	local inserted = self.ifaceList
 	local nodes = {}
-	local appendLength = appendMode and #inserted or 0
+	local appendLength = appendMode and inserted.length or 0
 	local instance = json.instance
 
 	-- Prepare all ifaces based on the namespace
@@ -250,7 +253,7 @@ function Engine:importJSON(json, options)
 	for namespace, ifaces in pairs(instance) do
 		-- Every ifaces that using this namespace name
 		for _, ifaceJSON in ipairs(ifaces) do
-			local iface = inserted[ifaceJSON.i + appendLength]
+			local iface = inserted[ifaceJSON.i]
 
 			if ifaceJSON.route then
 				iface.node.routes:routeTo(inserted[ifaceJSON.route.i + appendLength])
@@ -364,7 +367,7 @@ function Engine:importJSON(json, options)
 	end
 
 	self._importing = false
-	self:emit("json.imported", { appendMode = options.appendMode, startIndex = appendLength, nodes = inserted, raw = json })
+	self:emit("json.imported", { appendMode = options.appendMode, startIndex = appendLength, nodes = inserted, data = json })
 	Utils.runAsync(self.executionOrder:next())
 
 	return inserted
@@ -402,10 +405,12 @@ function Engine:_getTargetPortType(instance, whichPort, targetNodes)
 end
 
 function Engine:getNodes(namespace)
-	local ifaces = self.ifaceList
 	local got = {}
 
-	for _, val in ipairs(ifaces) do
+	local ifaces = self.ifaceList
+	for i = 0, ifaces.length-1 do
+		local val = ifaces[i]
+
 		if val.namespace == namespace then
 			table.insert(got, val.node)
 		end
@@ -463,11 +468,11 @@ function Engine:createNode(namespace, options, nodes)
 	local savedData = options.data
 	local portSwitches = options.output_sw
 
-	if options.i then
+	if options.i ~= nil then
 		iface.i = options.i
 		self.ifaceList[iface.i] = iface
 	else
-		table.insert(self.ifaceList, iface)
+		self.ifaceList:push(iface)
 	end
 
 	node:initPorts(savedData)
@@ -534,7 +539,7 @@ function Engine:createVariable(id, options)
 	local temp = BPVariable.new(id, options)
 	Utils.setDeepProperty(self.variables, ids, temp)
 
-	temp._scope = VarScope.public
+	temp._scope = VarScope.Public
 	self:_emit('variable.new', {
 		reference = temp,
 		scope = temp._scope,
@@ -549,16 +554,16 @@ function Engine:renameVariable(from_, to, scopeId)
 	to = Utils._stringCleanSymbols(to)
 
 	local instance, varsObject = nil, nil
-	if scopeId == VarScope.public then
+	if scopeId == VarScope.Public then
 		instance = self.rootInstance or self
 		varsObject = instance.variables
-	elseif scopeId == VarScope.private then
+	elseif scopeId == VarScope.Private then
 		instance = self
 		if instance.rootInstance == nil then
 			error("Can't rename private function variable from main instance")
 		end
 		varsObject = instance.variables
-	elseif scopeId == VarScope.shared then
+	elseif scopeId == VarScope.Shared then
 		return -- Already handled on nodes/Fn.py
 	end
 
@@ -587,7 +592,7 @@ function Engine:renameVariable(from_, to, scopeId)
 	Utils.deleteDeepProperty(varsObject, ids, true)
 	Utils.setDeepProperty(varsObject, ids2, oldObj)
 
-	if scopeId == VarScope.private then
+	if scopeId == VarScope.Private then
 		instance:_emit('variable.renamed', {
 			old = from_, now = to, bpFunction = self.parentInterface.node.bpFunction, scope = scopeId
 		})
@@ -598,12 +603,12 @@ end
 
 function Engine:deleteVariable(namespace, scopeId)
 	local varsObject, instance = nil, self
-	if scopeId == VarScope.public then
+	if scopeId == VarScope.Public then
 		instance = self.rootInstance or self
 		varsObject = instance.variables
-	elseif scopeId == VarScope.private then
+	elseif scopeId == VarScope.Private then
 		varsObject = instance.variables
-	elseif scopeId == VarScope.shared then
+	elseif scopeId == VarScope.Shared then
 		varsObject = instance.sharedVariables
 	end
 
@@ -640,14 +645,14 @@ function Engine:createFunction(id, options)
 	if options.vars then
 		local vars = options.vars
 		for _, val in ipairs(vars) do
-			temp:createVariable(val, { scope = VarScope.shared })
+			temp:createVariable(val, { scope = VarScope.Shared })
 		end
 	end
 
 	if options.privateVars then
 		local privateVars = options.privateVars
 		for _, val in ipairs(privateVars) do
-			temp:createVariable(val, { scope = VarScope.private })
+			temp:createVariable(val, { scope = VarScope.Private })
 		end
 	end
 
@@ -718,7 +723,7 @@ end
 
 function Engine:_envDeletedHandler(key)
 	local list = self.ifaceList
-	for i = #list, 1, -1 do
+	for i = list.length-1, 0, -1 do
 		local iface = list[i]
 		if iface.namespace ~= 'BP/Env/Get' and iface.namespace ~= 'BP/Env/Set' then continue end
 		if iface.data.name == key then self:deleteNode(iface) end
