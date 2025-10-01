@@ -37,6 +37,8 @@ _G.Blackprint = {
 	OutputPort = PortGhost.OutputPort,
 	InputPort = PortGhost.InputPort,
 
+	VarScope = require("@src/Nodes/BPVariable.lua").VarScope,
+
 	LuaUtils = {
 		Class = require("@src/LuaUtils/Class.lua"),
 		JSON = require("@src/LuaUtils/JSON.lua"),

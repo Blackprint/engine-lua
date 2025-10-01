@@ -21,7 +21,7 @@ VarScope.Shared = 2
 local BPVariable = setmetatable({}, { __index = CustomEvent })
 BPVariable.__index = function(this, key)
 	if key == 'value' then return rawget(this, '_value') end
-	return rawget(this, key) or rawget(CustomEvent, key)
+	return rawget(this, key) or rawget(BPVariable, key) or rawget(CustomEvent, key)
 end
 BPVariable.__newindex = function(this, key, val)
 	if key == 'value' then
@@ -61,6 +61,7 @@ function BPVariable:destroy()
 	for _, iface in ipairs(map) do  -- Create a copy to avoid modification during iteration
 		iface.node.instance:deleteNode(iface)
 	end
+	self:emit('destroy')
 end
 
 registerNode('BP/Var/Set', function(class, extends)
@@ -195,6 +196,11 @@ function BPVarGetSet:useType(port)
 		temp.type = Types.Trigger
 	end
 
+	-- Disable support for using ArrayOf port feature, we can't guarantee the consistency
+	if temp.type.feature == PortFeature.ArrayOf then
+		temp.type = port.type
+	end
+
 	if port.type == Types.Slot then
 		self:waitTypeChange(temp, port)
 	else
@@ -214,9 +220,15 @@ function BPVarGetSet:waitTypeChange(bpVar, port)
 	if port then
 		callback = function()
 			bpVar.type = port._config or port.type
-			if type(bpVar) == "table" and bpVar.type.feature == PortFeature.Trigger then
-				bpVar.type = Types.Trigger
+			if type(bpVar) == "table" then
+				if bpVar.type.feature == PortFeature.Trigger then
+					bpVar.type = Types.Trigger
+				elseif bpVar.type.feature == PortFeature.ArrayOf then
+					-- Disable support for using ArrayOf port feature, we can't guarantee the consistency
+					bpVar.type = port.type
+				end
 			end
+
 			bpVar:emit('type.assigned')
 		end
 	else
@@ -256,12 +268,6 @@ function BPVarGetSet:destroyIface()
 
 	local i = Utils.findFromList(temp.used, self)
 	if i then table.remove(temp.used, i) end
-
-	local listener = self._bpVarRef.listener
-	if not listener then return end
-
-	i = Utils.findFromList(listener, self)
-	if i then table.remove(listener, i) end
 end
 
 registerInterface('BPIC/BP/Var/Get', function(class, extends) extends(BPVarGetSet)

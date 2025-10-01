@@ -136,6 +136,8 @@ function BPEventListenEmit:initPorts(data)
 	for key in pairs(schema) do
 		self.node:createPort(createPortTarget, key, Types.Any)
 	end
+
+	self:_addToList()
 end
 
 function BPEventListenEmit:createField(name, type)

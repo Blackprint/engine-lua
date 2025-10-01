@@ -2,7 +2,15 @@ local Utils = require("@src/Utils.lua")
 local Types = require("@src/Types.lua")
 
 local Cable = {}
-Cable.__index = Cable
+Cable.__index = function(this, key)
+	-- Cable value property
+	if key == 'value' then
+		if this._disconnecting then return this.input.default end
+		this:visualizeFlow()
+		return this.output.value
+	end
+	return rawget(this, key) or rawget(Cable, key)
+end
 
 function Cable.new(owner, target)
 	local this = setmetatable({}, Cable)
@@ -99,13 +107,6 @@ function Cable:visualizeFlow()
 	if instance._remote ~= nil then
 		instance:_emit('_flowEvent', {cable = self})
 	end
-end
-
--- Cable value property
-function Cable:value()
-	if self._disconnecting then return self.input.default end
-	self:visualizeFlow()
-	return self.output.value
 end
 
 function Cable:disconnect(which)

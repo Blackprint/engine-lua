@@ -60,7 +60,7 @@ local function registerInterface(templatePath, clazz)
 	templatePath = templatePath:gsub('\\', '/')
 
 	if not Utils._stringStartsWith(templatePath, 'BPIC/') then
-		error(string.format("%s: The first parameter of 'registerInterface' must be started with BPIC to avoid name conflict. Please name the interface similar with 'templatePrefix' for your module that you have set on 'blackprint.config.js'.", templatePath))
+		Utils.throwError(string.format("%s: The first parameter of 'registerInterface' must be started with BPIC to avoid name conflict. Please name the interface similar with 'templatePrefix' for your module that you have set on 'blackprint.config.js'.", templatePath))
 	end
 
 	if Internal.interface[templatePath] then
@@ -88,19 +88,19 @@ end
 -- Register an event with schema
 local function registerEvent(namespace, options)
 	if Utils._stringHasSpace(namespace) then
-		error(string.format("Namespace can't have space character: '%s'", namespace))
+		Utils.throwError(string.format("Namespace can't have space character: '%s'", namespace))
 	end
 
 	local schema = options.schema
 	if schema == nil then
-		error("Registering an event must have a schema. If the event doesn't have a schema or dynamically created from an instance you may not need to do this registration.")
+		Utils.throwError("Registering an event must have a schema. If the event doesn't have a schema or dynamically created from an instance you may not need to do this registration.")
 	end
 
 	-- Validate schema types
 	for _, obj in ipairs(schema) do
 		-- Must be a data type or type from Blackprint.Port.{Feature}
 		if type(obj) ~= "table" or (obj.feature == nil and not Types.isType(obj)) then
-			error(string.format("Unsupported schema type for field 'key' in '%s'", namespace))
+			Utils.throwError(string.format("Unsupported schema type for field 'key' in '%s'", namespace))
 		end
 	end
 
@@ -110,7 +110,7 @@ end
 -- Create a shared variable
 local function createVariable(namespace, options)
 	if Utils._stringHasSpace(namespace) then
-		error(string.format("Namespace can't have space character: '%s'", namespace))
+		Utils.throwError(string.format("Namespace can't have space character: '%s'", namespace))
 	end
 
 	-- Lazy load, only use when being used in this func
