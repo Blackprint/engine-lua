@@ -5,6 +5,7 @@ local Event = require("@src/Event.lua")
 local Enums = require("@src/Nodes/Enums.lua")
 local registerNode = require("@src/Internal.lua").registerNode
 local registerInterface = require("@src/Internal.lua").registerInterface
+local Utils = require("@src/Utils.lua")
 
 registerNode('BP/Env/Get', function(class, extends)
 	class.output = {
@@ -56,7 +57,7 @@ BPEnvGetSet.__index = BPEnvGetSet
 
 function BPEnvGetSet:imported(data)
 	if not data.name or data.name == '' then
-		error("Parameter 'name' is required")
+		Utils.throwError("Parameter 'name' is required")
 	end
 
 	self.title = data.name

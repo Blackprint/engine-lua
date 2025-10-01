@@ -29,10 +29,11 @@ end
 
 function InstanceEvents:createEvent(namespace, options)
 	if self.list[namespace] then return end -- throw new Error(f"Event with name '{namespace}' already exist")
+	if options == nil then options = {} end
 
 	-- if re.match(namespace, "/\\s/") then
 	if string.find(namespace, "[ \t\n]") ~= nil then
-		error(string.format("Namespace can't have space character: '%s'", namespace))
+		Utils.throwError(string.format("Namespace can't have space character: '%s'", namespace))
 	end
 
 	if options.schema and Utils._isList(options.schema) then
@@ -57,11 +58,11 @@ function InstanceEvents:createEvent(namespace, options)
 end
 
 function InstanceEvents:renameEvent(from_, to)
-	if self.list[to] then error(string.format("Event with name '%s' already exist", to)) end
+	if self.list[to] then Utils.throwError(string.format("Event with name '%s' already exist", to)) end
 
 	-- if re.match(to, "/\\s/") then
 	if string.find(to, "[ \t\n]") ~= nil then
-		error(string.format("Namespace can't have space character: '%s'", to))
+		Utils.throwError(string.format("Namespace can't have space character: '%s'", to))
 	end
 
 	local oldEvInstance = self.list[from_]
@@ -155,7 +156,7 @@ function InstanceEvents:refreshFields(namespace, _name, _to)
 				refreshPorts(iface, 'input')
 			end
 		else
-			error("Unrecognized node in event list's stored nodes")
+			Utils.throwError("Unrecognized node in event list's stored nodes")
 		end
 	end
 end

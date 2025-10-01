@@ -78,9 +78,12 @@ function BPFunction.new(id, options, instance)
 		instance_.bpFunction = temp
 		node.bpFunction = temp
 		iface.title = temp.title
+		iface.namespace = id
 		iface.type = 'function'
 		uniqId = uniqId + 1
 		iface.uniqId = uniqId
+
+		iface.lala = true
 
 		iface._enum = Enums.BPFnMain
 		iface:_prepare_(BPFunctionNode)
@@ -212,19 +215,19 @@ function BPFunction:_onFuncChanges(eventName, obj, fromNode)
 			if input.iface._bpDestroy or output.iface._bpDestroy then continue end
 
 			local inputIface = nodeInstance.ifaceList[ifaceList:indexOf(input.iface)]
-			if not inputIface then error("Failed to get node input iface index") end
+			if not inputIface then Utils.throwError("Failed to get node input iface index") end
 
 			local outputIface = nodeInstance.ifaceList[ifaceList:indexOf(output.iface)]
-			if not outputIface then error("Failed to get node output iface index") end
+			if not outputIface then Utils.throwError("Failed to get node output iface index") end
 
 			if inputIface.namespace ~= input.iface.namespace then
 				print(inputIface.namespace .. ' != ' .. input.iface.namespace)
-				error("Input iface namespace was different")
+				Utils.throwError("Input iface namespace was different")
 			end
 
 			if outputIface.namespace ~= output.iface.namespace then
 				print(outputIface.namespace .. ' != ' .. output.iface.namespace)
-				error("Output iface namespace was different")
+				Utils.throwError("Output iface namespace was different")
 			end
 
 			if eventName == 'cable.connect' then
@@ -235,7 +238,7 @@ function BPFunction:_onFuncChanges(eventName, obj, fromNode)
 					if inputIface._enum == Enums.BPFnOutput then
 						targetInput = inputIface:addPort(targetOutput, output.name)
 					else
-						error("Output port was not found")
+						Utils.throwError("Output port was not found")
 					end
 				end
 
@@ -243,7 +246,7 @@ function BPFunction:_onFuncChanges(eventName, obj, fromNode)
 					if outputIface._enum == Enums.BPFnInput then
 						targetOutput = outputIface:addPort(targetInput, input.name)
 					else
-						error("Input port was not found")
+						Utils.throwError("Input port was not found")
 					end
 				end
 
@@ -266,12 +269,12 @@ function BPFunction:_onFuncChanges(eventName, obj, fromNode)
 			})
 		elseif eventName == 'node.delete' then
 			local index = fromNode.iface.bpInstance.ifaceList:indexOf(obj.iface)
-			if not index then error("Failed to get node index") end
+			if not index then Utils.throwError("Failed to get node index") end
 
 			local iface = nodeInstance.ifaceList[index]
 			if iface.namespace ~= obj.iface.namespace then
 				print(iface.namespace .. ' ' .. obj.iface.namespace)
-				error("Failed to delete node from other function instance")
+				Utils.throwError("Failed to delete node from other function instance")
 			end
 
 			nodeInstance:deleteNode(iface)
@@ -285,7 +288,7 @@ end
 
 function BPFunction:createVariable(id, options)
 	if string.find(id, '/') then
-		error("Slash symbol is reserved character and currently can't be used for creating path")
+		Utils.throwError("Slash symbol is reserved character and currently can't be used for creating path")
 	end
 
 	if options.scope == VarScope.Private then
@@ -303,12 +306,12 @@ function BPFunction:createVariable(id, options)
 		end
 		return
 	elseif options.scope == VarScope.Public then
-		error("Can't create public variable from a function")
+		Utils.throwError("Can't create public variable from a function")
 	end
 
 	-- Shared variable
 	if self.variables[id] then
-		error("Variable id already exist: " .. id)
+		Utils.throwError("Variable id already exist: " .. id)
 	end
 
 	local temp = BPVariable.new(id, options)
@@ -327,9 +330,9 @@ function BPFunction:createVariable(id, options)
 end
 
 function BPFunction:renameVariable(from_, to, scopeId)
-	if not scopeId then error("Third parameter couldn't be null") end
+	if not scopeId then Utils.throwError("Third parameter couldn't be null") end
 	if string.find(to, '/') then
-		error("Slash symbol is reserved character and currently can't be used for creating path")
+		Utils.throwError("Slash symbol is reserved character and currently can't be used for creating path")
 	end
 
 	to = Utils._stringCleanSymbols(to)
@@ -337,13 +340,13 @@ function BPFunction:renameVariable(from_, to, scopeId)
 	if scopeId == VarScope.Private then
 		local index = Utils.findFromList(self.privateVars, from_)
 		if index == -1 then
-			error("Private variable with name '" .. from_ .. "' was not found on '" .. self.id .. "' function")
+			Utils.throwError("Private variable with name '" .. from_ .. "' was not found on '" .. self.id .. "' function")
 		end
 		self.privateVars[index] = to
 	elseif scopeId == VarScope.Shared then
 		local varObj = self.variables[from_]
 		if not varObj then
-			error("Shared variable with name '" .. from_ .. "' was not found on '" .. self.id .. "' function")
+			Utils.throwError("Shared variable with name '" .. from_ .. "' was not found on '" .. self.id .. "' function")
 		end
 
 		varObj.id = to
@@ -355,7 +358,7 @@ function BPFunction:renameVariable(from_, to, scopeId)
 			old = from_, now = to, reference = varObj, scope = scopeId,
 		})
 	else
-		error("Can't rename variable from scopeId: " .. scopeId)
+		Utils.throwError("Can't rename variable from scopeId: " .. scopeId)
 	end
 
 	-- Update references in all function instances
@@ -468,7 +471,7 @@ end
 function BPFunction:deletePort(which, portName)
 	local used = self.used
 	if #used == 0 then
-		error("One function node need to be placed to the instance before deleting port")
+		Utils.throwError("One function node need to be placed to the instance before deleting port")
 	end
 
 	local main = self[which]
@@ -522,7 +525,7 @@ function BPFunction:invoke(input)
 
 	local proxyInput = iface._proxyInput
 	if not proxyInput.routes.out then
-		error(self.id .. ": Blackprint function node must have route port that connected from input node to the output node")
+		Utils.throwError(self.id .. ": Blackprint function node must have route port that connected from input node to the output node")
 	end
 
 	local inputPorts = proxyInput.iface.output
@@ -561,7 +564,7 @@ end
 
 function BPFunction:addPrivateVars(id)
 	if string.find(id, '/') then
-		error("Slash symbol is reserved character and currently can't be used for creating path")
+		Utils.throwError("Slash symbol is reserved character and currently can't be used for creating path")
 	end
 
 	if not Utils.findFromList(self.privateVars, id) then
@@ -731,7 +734,7 @@ registerInterface('BPIC/BP/Fn/Main', function(class, extends)
 
 	function class:_BpFnInit()
 		if self._importOnce then
-			error("Can't import function more than once")
+			Utils.throwError("Can't import function more than once")
 		end
 
 		self._importOnce = true
@@ -803,7 +806,7 @@ function BPFnInOut:addPort(port, customName)
 	if not port then return end
 
 	if Utils._stringStartsWith(port.iface.namespace, "BP/Fn") then
-		error("Function Input can't be connected directly to Output")
+		Utils.throwError("Function Input can't be connected directly to Output")
 	end
 
 	local name = ''

@@ -171,7 +171,7 @@ function PortLink:__newindex(key, val)
 
 
 	if not port then
-		error(string.format("Port %s ('%s') was not found on node with namespace '%s'",
+		Utils.throwError(string.format("Port %s ('%s') was not found on node with namespace '%s'",
 			self._which, key, self._iface.namespace))
 	end
 
@@ -181,7 +181,7 @@ function PortLink:__newindex(key, val)
 	end
 
 	if port.source == 'input' then
-		error("Can't set data to input port")
+		Utils.throwError("Can't set data to input port")
 	end
 
 	if not val then
@@ -191,11 +191,11 @@ function PortLink:__newindex(key, val)
 		if port.type == Types.Any then
 			-- pass
 		elseif port.type == Types.Slot then
-			error("Port type need to be assigned before giving any value")
+			Utils.throwError("Port type need to be assigned before giving any value")
 		elseif type(val) == port.type then
 			-- pass
 		else
-			error(string.format("Can't validate type: %s != %s", type(val), port.type))
+			Utils.throwError(string.format("Can't validate type: %s != %s", type(val), port.type))
 		end
 	end
 
@@ -232,7 +232,7 @@ end
 
 function PortLink:_add(portName, val)
 	if portName == '' then
-		error("Port name can't be empty")
+		Utils.throwError("Port name can't be empty")
 	end
 
 	if self._which == 'output' and type(val) == "table" and val.feature then

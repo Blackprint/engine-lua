@@ -5,6 +5,7 @@ local Types = require("@src/Types.lua")
 local PortFeature = require("@src/Port/PortFeature.lua")
 local Interface = require("@src/Interface.lua")
 local Class = require("@src/LuaUtils/Class.lua")
+local Utils = require("@src/Utils.lua")
 
 local Node = {}
 Node.__index = Class.extends(Node, CustomEvent)
@@ -19,7 +20,7 @@ end
 -- Set the interface for this node
 function Node:setInterface(namespace)
 	if self.iface then
-		error('node.setInterface() can only be called once')
+		Utils.throwError('node.setInterface() can only be called once')
 	end
 
 	if namespace == nil then
@@ -28,11 +29,11 @@ function Node:setInterface(namespace)
 	end
 
 	if not self._constructed then
-		error(string.format("%s isn't constructed, maybe there are some incorrect implementation?", namespace))
+		Utils.throwError(string.format("%s isn't constructed, maybe there are some incorrect implementation?", namespace))
 	end
 
 	if not Internal.interface[namespace] then
-		error(string.format("Node interface for '[%s]' was not found, maybe .registerInterface() haven't being called?", namespace))
+		Utils.throwError(string.format("Node interface for '[%s]' was not found, maybe .registerInterface() haven't being called?", namespace))
 	end
 
 	local iface = Internal.interface[namespace].new(self)
@@ -44,15 +45,15 @@ end
 -- Create a new port
 function Node:createPort(which, name, type_)
 	if self.instance._locked_ then
-		error("This instance was locked")
+		Utils.throwError("This instance was locked")
 	end
 
 	if which ~= 'input' and which ~= 'output' then
-		error("Can only create port for 'input' and 'output'")
+		Utils.throwError("Can only create port for 'input' and 'output'")
 	end
 
 	if not type_ then
-		error("Type is required for creating new port")
+		Utils.throwError("Type is required for creating new port")
 	end
 
 	if type(name) ~= "string" then
@@ -92,24 +93,24 @@ function Node:createPort(which, name, type_)
 	else
 		print("Get type:")
 		print(type_)
-		error("Type must be a class object or from Blackprint.Port.{feature}")
+		Utils.throwError("Type must be a class object or from Blackprint.Port.{feature}")
 	end
 end
 
 -- Rename a port
 function Node:renamePort(which, name, to)
 	if self.instance._locked_ then
-		error("This instance was locked")
+		Utils.throwError("This instance was locked")
 	end
 
 	local iPort = self.iface[which]
 
 	if not iPort[name] then
-		error(string.format("%s port with name '%s' was not found", which, name))
+		Utils.throwError(string.format("%s port with name '%s' was not found", which, name))
 	end
 
 	if iPort[to] then
-		error(string.format("%s port with name '%s' already exist", which, to))
+		Utils.throwError(string.format("%s port with name '%s' already exist", which, to))
 	end
 
 	local temp = iPort[name]
@@ -124,11 +125,11 @@ end
 -- Delete a port
 function Node:deletePort(which, name)
 	if self.instance._locked_ then
-		error("This instance was locked")
+		Utils.throwError("This instance was locked")
 	end
 
 	if which ~= 'input' and which ~= 'output' then
-		error("Can only delete port for 'input' and 'output'")
+		Utils.throwError("Can only delete port for 'input' and 'output'")
 	end
 
 	if type(name) ~= "string" then
@@ -201,7 +202,7 @@ function Node:_syncToAllFunction(id, data)
 
 		local target = iface.bpInstance.ifaceList[nodeIndex]
 		if not target then
-			error(string.format("Target node was not found on other function instance, maybe the node was not correctly synced? (%s);", namespace:sub(7)))
+			Utils.throwError(string.format("Target node was not found on other function instance, maybe the node was not correctly synced? (%s);", namespace:sub(7)))
 		end
 
 		target.node:syncIn(id, data, false)

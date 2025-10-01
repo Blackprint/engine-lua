@@ -122,13 +122,13 @@ end
 
 function BPEventListenEmit:initPorts(data)
 	local namespace = data.namespace
-	if not namespace then error("Parameter 'namespace' is required") end
+	if not namespace then Utils.throwError("Parameter 'namespace' is required") end
 
 	self.data.namespace = namespace
 	self.title = namespace
 
 	self._eventRef = self.node.instance.events.list[namespace]
-	if not self._eventRef then error("Events (namespace) is not defined") end
+	if not self._eventRef then Utils.throwError("Events (namespace) is not defined") end
 
 	local schema = self._eventRef.schema
 	local createPortTarget = self._enum == Enums.BPEventListen and 'output' or 'input'
@@ -144,7 +144,7 @@ function BPEventListenEmit:createField(name, type)
 	local schema = self._eventRef.schema
 	if schema[name] then return end
 
-	schema[name] = type
+	schema[name] = type or Types.Any
 	self._insEventsRef:refreshFields(self.data.namespace)
 	self.node.instance:_emit('event.field.created', {
 		name = name,
@@ -200,7 +200,7 @@ registerInterface('BPIC/BP/Event/Listen', function(class, extends) extends(BPEve
 	function class:initPorts(data)
 		BPEventListenEmit.initPorts(self, data)
 
-		if self._listener then error("This node already listen to an event") end
+		if self._listener then Utils.throwError("This node already listen to an event") end
 		self._listener = function(ev) self.node:eventUpdate(ev) end
 
 		self._insEventsRef:on(data.namespace, self._listener)

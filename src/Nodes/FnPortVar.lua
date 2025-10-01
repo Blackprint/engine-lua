@@ -5,13 +5,14 @@ local Interface = require("@src/Interface.lua")
 local Enums = require("@src/Nodes/Enums.lua")
 local registerNode = require("@src/Internal.lua").registerNode
 local registerInterface = require("@src/Internal.lua").registerInterface
+local Utils = require("@src/Utils.lua")
 
 local PortName = {}
 function PortName.new(name)
 	return { name = name }
 end
 
-local _Dummy_PortTrigger = PortFeature.Trigger(function() error("This can't be called") end)
+local _Dummy_PortTrigger = PortFeature.Trigger(function() Utils.throwError("This can't be called") end)
 
 local function getFnPortType(port, which, parentNode, ref)
 	if port.feature == PortFeature.Trigger or port.type == Types.Trigger then
@@ -25,7 +26,7 @@ local function getFnPortType(port, which, parentNode, ref)
 	elseif port.feature == PortFeature.ArrayOf then
 		return port.type
 	elseif port._isSlot then
-		error("Function node's input/output can't use port from an lazily assigned port type (Types.Slot)")
+		Utils.throwError("Function node's input/output can't use port from an lazily assigned port type (Types.Slot)")
 	else
 		return port._config
 	end
@@ -98,7 +99,7 @@ end
 
 function BPFnVarInOut:imported(data)
 	if not data.name or data.name == '' then
-		error("Parameter 'name' is required")
+		Utils.throwError("Parameter 'name' is required")
 	end
 	self.data.name = data.name
 	self.parentInterface = self.node.instance.parentInterface

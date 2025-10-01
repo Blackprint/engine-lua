@@ -2,6 +2,7 @@ local Types = require("@src/Types.lua")
 local Cable = require("@src/Constructor/Cable.lua")
 local Enums = require("@src/Nodes/Enums.lua")
 local CustomEvent = require("@src/Constructor/CustomEvent.lua")
+local Utils = require("@src/Utils.lua")
 
 local RoutePort = setmetatable({}, { __index = CustomEvent })
 RoutePort.__index = RoutePort
@@ -49,7 +50,7 @@ end
 -- Connect to input route
 function RoutePort:connectCable(cable)
 	if not cable.isRoute then
-		error("Cable must be created from route port before can be connected to other route port. Please use .routeTo(interface) instead if possible.")
+		Utils.throwError("Cable must be created from route port before can be connected to other route port. Please use .routeTo(interface) instead if possible.")
 	end
 
 	for _, existing in ipairs(self.inp) do
@@ -58,7 +59,7 @@ function RoutePort:connectCable(cable)
 
 	if not self.iface.node.update then
 		cable:disconnect()
-		error("node.update() was not defined for this node")
+		Utils.throwError("node.update() was not defined for this node")
 	end
 
 	table.insert(self.inp, cable)

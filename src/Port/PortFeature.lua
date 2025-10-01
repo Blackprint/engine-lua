@@ -1,4 +1,5 @@
 local Types = require("@src/Types.lua")
+local Utils = require("@src/Utils.lua")
 
 local Port = {}
 
@@ -40,7 +41,7 @@ end
 -- This port will be used as a trigger or callable input port
 -- func = callback when the port was being called as a function
 function Port.Trigger(func)
-	if not func then error("Callback must not be None") end
+	if not func then Utils.throwError("Callback must not be None") end
 	return {
 		feature = Port.Trigger,
 		type = Types.Trigger,
@@ -78,12 +79,12 @@ end
 
 -- VirtualType is only for browser with Sketch library
 function Port.VirtualType()
-	error("VirtualType is only for browser with Sketch library")
+	Utils.throwError("VirtualType is only for browser with Sketch library")
 end
 
 function Port.StructOf_split(port)
 	if port.source == 'input' then
-		error("Port with feature 'StructOf' only supported for output port")
+		Utils.throwError("Port with feature 'StructOf' only supported for output port")
 	end
 
 	local node = port.iface.node

@@ -50,7 +50,7 @@ function Port:_getPortFeature()
 		return PortFeature.Union(self.type)
 	end
 
-	error("Port feature not recognized")
+	Utils.throwError("Port feature not recognized")
 end
 
 function Port:disconnectAll(hasRemote)
@@ -77,7 +77,7 @@ function Port:_call(cable)
 	if self._calling then
 		local input = cable.input
 		local output = cable.output
-		error(string.format("Circular call stack detected:\nFrom: %s.%s\nTo: %s.%s",
+		Utils.throwError(string.format("Circular call stack detected:\nFrom: %s.%s\nTo: %s.%s",
 			output.iface.title, output.name, input.iface.title, input.name))
 	end
 
@@ -91,7 +91,7 @@ function Port:_call(cable)
 	cable._calling = false
 
 	if not success then
-		error(err)
+		Utils.throwError(err)
 	end
 
 	if iface._enum ~= Enums.BPFnMain then
@@ -269,7 +269,7 @@ function Port:_cableConnectError(name, obj, severe)
 	-- print(msg)
 
 	if severe and instance.throwOnError then
-		error(msg .. "\n")
+		Utils.throwError(msg .. "\n")
 	end
 
 	instance:_emit(name, {
@@ -281,11 +281,11 @@ function Port:_cableConnectError(name, obj, severe)
 end
 
 function Port:assignType(type_)
-	if not type_ then error("Can't set type with undefined") end
+	if not type_ then Utils.throwError("Can't set type with undefined") end
 
 	if self.type ~= Types.Slot then
 		print(self.type)
-		error("Can only assign type to port with 'Slot' type, this port already has type")
+		Utils.throwError("Can only assign type to port with 'Slot' type, this port already has type")
 	end
 
 	-- Skip if the assigned type is also Slot type
@@ -303,7 +303,7 @@ function Port:assignType(type_)
 		end
 
 		if not pass_ then
-			error(string.format("The output value of this port is not instance of type that will be assigned: %s is not instance of %s",
+			Utils.throwError(string.format("The output value of this port is not instance of type that will be assigned: %s is not instance of %s",
 				gettype, type_))
 		end
 	end
@@ -321,7 +321,7 @@ function Port:assignType(type_)
 		elseif portType == Types.Slot then
 			-- pass
 		elseif Types.isType(portType) or Types.isType(type_) then
-			error(string.format("The target port's connection of this port is not instance of type that will be assigned: %s is not instance of %s",
+			Utils.throwError(string.format("The target port's connection of this port is not instance of type that will be assigned: %s is not instance of %s",
 				portType, type_))
 		else
 			local clazz
@@ -332,7 +332,7 @@ function Port:assignType(type_)
 			end
 
 			if not portType:isSubclassOf(clazz) then
-				error(string.format("The target port's connection of this port is not instance of type that will be assigned: %s is not instance of %s",
+				Utils.throwError(string.format("The target port's connection of this port is not instance of type that will be assigned: %s is not instance of %s",
 					portType, clazz))
 			end
 		end
@@ -350,9 +350,12 @@ function Port:assignType(type_)
 				type_ = type_.type
 			end
 		else
-			if not type_.type then error("Missing type for port feature") end
+			if not type_.type then Utils.throwError("Missing type for port feature") end
 
-			self.feature = type_.feature
+			-- Disable support for using ArrayOf port feature, we can't guarantee the consistency
+			if type_.feature ~= PortFeature.ArrayOf then
+				self.feature = type_.feature
+			end
 			self.type = type_.type
 
 			if type_.feature == PortFeature.StructOf then
@@ -547,7 +550,7 @@ end
 
 function Port:connectPort(port)
 	if self._node.instance._locked_ then
-		error("This instance was locked")
+		Utils.throwError("This instance was locked")
 	end
 
 	if getmetatable(port) == Port then
@@ -566,9 +569,9 @@ function Port:connectPort(port)
 			table.insert(self.cables, cable)
 			return port:connectCable(cable)
 		end
-		error("Unhandled connection for RoutePort")
+		Utils.throwError("Unhandled connection for RoutePort")
 	end
-	error("First parameter must be instance of Port or RoutePort")
+	Utils.throwError("First parameter must be instance of Port or RoutePort")
 end
 
 function Port:_createPortCable(port)

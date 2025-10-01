@@ -39,7 +39,7 @@ function BPVariable.new(id, options)
 	local this = setmetatable(CustomEvent.new(), BPVariable)
 
 	if string.find(id, "[^%w_]") or string.find(id, "[\\/]") then
-		error("BPVariable id can't include symbol character except underscore")
+		Utils.throwError("BPVariable id can't include symbol character except underscore")
 	end
 
 	this.id = id
@@ -121,7 +121,7 @@ end
 
 function BPVarGetSet:imported(data)
 	if not data.scope or not data.name then
-		error("'scope' and 'name' options is required for creating variable node")
+		Utils.throwError("'scope' and 'name' options is required for creating variable node")
 	end
 
 	self:changeVar(data.name, data.scope)
@@ -131,7 +131,7 @@ end
 
 function BPVarGetSet:changeVar(name, scopeId)
 	if self.data.name ~= '' then
-		error("Can't change variable node that already be initialized")
+		Utils.throwError("Can't change variable node that already be initialized")
 	end
 
 	self.data.name = name
@@ -152,7 +152,7 @@ function BPVarGetSet:changeVar(name, scopeId)
 		if bpFunction then
 			scope = bpFunction.variables
 		else
-			error("Shared variable requires a function context")
+			Utils.throwError("Shared variable requires a function context")
 		end
 	else -- private
 		scope = self.node.instance.variables
@@ -172,14 +172,14 @@ function BPVarGetSet:changeVar(name, scopeId)
 			_scopeName = 'unknown'
 		end
 
-		error(("'%s' variable was not defined on the '%s (scopeId: %d)' instance"):format(name, _scopeName, scopeId))
+		Utils.throwError(("'%s' variable was not defined on the '%s (scopeId: %d)' instance"):format(name, _scopeName, scopeId))
 	end
 
 	return construct
 end
 
 function BPVarGetSet:_reinitPort()
-	error("It should only call child method and not the parent")
+	Utils.throwError("It should only call child method and not the parent")
 end
 
 function BPVarGetSet:useType(port)
@@ -190,7 +190,7 @@ function BPVarGetSet:useType(port)
 		return
 	end
 
-	if not port then error("Can't set type with None") end
+	if not port then Utils.throwError("Can't set type with None") end
 	temp.type = port._config or port.type
 	if type(temp) == "table" and temp.type.feature == PortFeature.Trigger then
 		temp.type = Types.Trigger
@@ -278,7 +278,7 @@ registerInterface('BPIC/BP/Var/Get', function(class, extends) extends(BPVarGetSe
 
 	function class:changeVar(name, scopeId)
 		if self.data.name ~= '' then
-			error("Can't change variable node that already be initialized")
+			Utils.throwError("Can't change variable node that already be initialized")
 		end
 
 		if self._onChanged then

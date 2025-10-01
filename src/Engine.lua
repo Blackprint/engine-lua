@@ -72,7 +72,7 @@ function Engine:deleteNode(iface)
 		list:splice(i, 1)
 	else
 		if self.throwOnError then
-			error("Node to be deleted was not found")
+			Utils.throwError("Node to be deleted was not found")
 		end
 
 		return self:_emit('error', {
@@ -128,7 +128,7 @@ function Engine:deleteNode(iface)
 end
 
 function Engine:clearNodes()
-	if self._locked_ then error("This instance was locked") end
+	if self._locked_ then Utils.throwError("This instance was locked") end
 	self._destroying = true
 
 	local ifaces = self.ifaceList
@@ -161,7 +161,7 @@ function Engine:importJSON(json, options)
 
 	-- Throw if no instance data in the JSON
 	if not json.instance then
-		error("Instance was not found in the JSON data")
+		Utils.throwError("Instance was not found in the JSON data")
 	end
 
 	options = options or {}
@@ -273,14 +273,14 @@ function Engine:importJSON(json, options)
 							linkPortA = iface:addPort(target, portName)
 
 							if linkPortA == nil then
-								error(string.format("Can't create output port (%s) for function (%s)", portName, iface.parentInterface.node.bpFunction.id))
+								Utils.throwError(string.format("Can't create output port (%s) for function (%s)", portName, iface.parentInterface.node.bpFunction.id))
 							end
 						elseif iface._enum == Enums.BPVarGet then
 							local target = self:_getTargetPortType(self, 'input', ports)
 							iface:useType(target)
 							linkPortA = iface.output[portName]
 						else
-							error(string.format("Node port not found for iface (index: %s, title: %s), with port name: %s", ifaceJSON.i, iface.title, portName))
+							Utils.throwError(string.format("Node port not found for iface (index: %s, title: %s), with port name: %s", ifaceJSON.i, iface.title, portName))
 						end
 					end
 
@@ -308,7 +308,7 @@ function Engine:importJSON(json, options)
 								linkPortB = targetNode:addPort(linkPortA, target.name)
 
 								if linkPortB == nil then
-									error(string.format("Can't create output port (%s) for function (%s)", target.name, targetNode.parentInterface.node.bpFunction.id))
+									Utils.throwError(string.format("Can't create output port (%s) for function (%s)", target.name, targetNode.parentInterface.node.bpFunction.id))
 								end
 							elseif targetNode._enum == Enums.BPVarSet then
 								targetNode:useType(linkPortA)
@@ -316,7 +316,7 @@ function Engine:importJSON(json, options)
 							elseif linkPortA.type == Types.Route then
 								linkPortB = targetNode.node.routes
 							else
-								error(string.format("Node port not found for targetNode.title with name: %s", target.name))
+								Utils.throwError(string.format("Node port not found for targetNode.title with name: %s", target.name))
 							end
 						end
 
@@ -433,7 +433,7 @@ function Engine:createNode(namespace, options, nodes)
 	end
 
 	if func == nil then
-		error(string.format("Node nodes for namespace '%s' was not found, maybe .registerNode() haven't being called?", namespace))
+		Utils.throwError(string.format("Node nodes for namespace '%s' was not found, maybe .registerNode() haven't being called?", namespace))
 	end
 
 	-- @var Node
@@ -444,7 +444,7 @@ function Engine:createNode(namespace, options, nodes)
 	if self.disablePorts then node.disablePorts = true end
 
 	if iface == nil then
-		error(string.format("%s: Node interface was not found, do you forget to call node.setInterface() in the constructor?", namespace))
+		Utils.throwError(string.format("%s: Node interface was not found, do you forget to call node.setInterface() in the constructor?", namespace))
 	end
 
 	iface.namespace = namespace
@@ -517,9 +517,9 @@ function Engine:createNode(namespace, options, nodes)
 end
 
 function Engine:createVariable(id, options)
-	if self._locked_ then error("This instance was locked") end
+	if self._locked_ then Utils.throwError("This instance was locked") end
 	if Utils._stringHasSpace(id) then
-		error(string.format("Id can't have space character: '%s'", id))
+		Utils.throwError(string.format("Id can't have space character: '%s'", id))
 	end
 
 	local ids = Utils._stringSplit(id, '/')
@@ -560,7 +560,7 @@ function Engine:renameVariable(from_, to, scopeId)
 	elseif scopeId == VarScope.Private then
 		instance = self
 		if instance.rootInstance == nil then
-			error("Can't rename private function variable from main instance")
+			Utils.throwError("Can't rename private function variable from main instance")
 		end
 		varsObject = instance.variables
 	elseif scopeId == VarScope.Shared then
@@ -571,13 +571,13 @@ function Engine:renameVariable(from_, to, scopeId)
 	local ids = Utils._stringSplit(from_, '/')
 	local oldObj = Utils.getDeepProperty(varsObject, ids)
 	if oldObj == nil then
-		error(string.format("Variable with name '%s' was not found", from_))
+		Utils.throwError(string.format("Variable with name '%s' was not found", from_))
 	end
 
 	-- New target variable object
 	local ids2 = Utils._stringSplit(to, '/')
 	if Utils.getDeepProperty(varsObject, ids2) ~= nil then
-		error(string.format("Variable with similar name already exist in '%s'", to))
+		Utils.throwError(string.format("Variable with similar name already exist in '%s'", to))
 	end
 
 	local map = oldObj.used
@@ -624,9 +624,9 @@ function Engine:deleteVariable(namespace, scopeId)
 end
 
 function Engine:createFunction(id, options)
-	if self._locked_ then error("This instance was locked") end
+	if self._locked_ then Utils.throwError("This instance was locked") end
 	if Utils._stringHasSpace(id) then
-		error(string.format("Id can't have space character: '%s'", id))
+		Utils.throwError(string.format("Id can't have space character: '%s'", id))
 	end
 
 	local ids = Utils._stringSplit(id, '/')
@@ -668,13 +668,13 @@ function Engine:renameFunction(from_, to)
 	local ids = Utils._stringSplit(from_, '/')
 	local oldObj = Utils.getDeepProperty(self.functions, ids)
 	if oldObj == nil then
-		error(string.format("Function with name '%s' was not found", from_))
+		Utils.throwError(string.format("Function with name '%s' was not found", from_))
 	end
 
 	-- New target function object
 	local ids2 = Utils._stringSplit(to, '/')
 	if Utils.getDeepProperty(self.functions, ids2) ~= nil then
-		error(string.format("Function with similar name already exist in '%s'", to))
+		Utils.throwError(string.format("Function with similar name already exist in '%s'", to))
 	end
 
 	local map = oldObj.used
@@ -750,7 +750,7 @@ function Engine:ready()
 end
 
 function Engine:changeNodeId(iface, newId)
-	if self._locked_ then error("This instance was locked") end
+	if self._locked_ then Utils.throwError("This instance was locked") end
 
 	local sketch = iface.node.instance
 	local oldId = iface.id

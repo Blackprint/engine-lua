@@ -1,5 +1,5 @@
 local Types = require("@src/Types.lua")
-local Port = require("@src/Port/PortFeature.lua")
+local Port = nil -- require("@src/Port/PortFeature.lua"): lazy load to avoid circular error
 
 local Utils = {}
 
@@ -13,7 +13,7 @@ function Utils.setDeepProperty(obj, path, value, onCreate)
 	for i = 1, #path - 1 do
 		local key = path[i]
 		if type(key) ~= "string" and type(key) ~= "number" then
-			error(string.format("Object field must be Number or String, but found: %s", tostring(key)))
+			Utils.throwError(string.format("Object field must be Number or String, but found: %s", tostring(key)))
 		end
 
 		-- Disallow diving into internal Lua properties
@@ -34,7 +34,7 @@ function Utils.setDeepProperty(obj, path, value, onCreate)
 	-- Check the last path component type
 	local lastKey = path[#path]
 	if type(lastKey) ~= "string" and type(lastKey) ~= "number" then
-		error(string.format("Object field must be Number or String, but found: %s", tostring(lastKey)))
+		Utils.throwError(string.format("Object field must be Number or String, but found: %s", tostring(lastKey)))
 	end
 
 	if lastKey == "__class" or lastKey == "__dict" or lastKey == "__weakref" or lastKey == "__module" or lastKey == "__bases" then
@@ -120,8 +120,10 @@ end
 -- Determine port type and return type, default value, and feature
 function Utils.determinePortType(val, that)
 	if val == nil then
-		error(string.format("Port type can't be None, error when processing: %s, %s port", that._iface.namespace, that._which))
+		Utils.throwError(string.format("Port type can't be None, error when processing: %s, %s port", that._iface.namespace, that._which))
 	end
+
+	if Port == nil then Port = require("@src/Port/PortFeature.lua") end
 
 	local type_ = val
 	local def_ = nil
@@ -270,6 +272,11 @@ function Utils._isList(obj)
 		break
 	end
 	return isList
+end
+
+function Utils.throwError(message)
+	print("[Stack Trace]", debug.traceback())
+	error(message)
 end
 
 return Utils

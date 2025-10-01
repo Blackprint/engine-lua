@@ -83,7 +83,7 @@ end
 function OrderedExecution:_isReachLimit()
 	local i = self.index + 1
 	if i >= self.initialSize or self.length >= self.initialSize then
-		error("Execution order limit was exceeded")
+		Utils.throwError("Execution order limit was exceeded")
 	end
 end
 
@@ -245,7 +245,7 @@ function OrderedExecution:_checkExecutionLimit()
 
 	local node = self.list[self.index]
 	if not node then
-		error("Empty")
+		Utils.throwError("Empty")
 	end
 
 	if not self._execCounter then
@@ -448,7 +448,7 @@ function OrderedExecution:next(force)
 	if not success then
 		if _proxyInput then _proxyInput._bpUpdating = false end
 		self:clear()
-		error(err)
+		Utils.throwError(err)
 	end
 
 	if self.stepMode then self:_emitNextExecution(next) end
