@@ -19,7 +19,7 @@ Blackprint.registerNode('Example/Button/Simple', function(class, extends)
 	end
 
 	function class:syncIn(id, data)
-		if id == 'click' and data.press == false then
+		if id == 'click' and data == true then
 			self.iface:clicked()
 		end
 	end
@@ -30,6 +30,6 @@ Blackprint.registerInterface('BPIC/Example/Button', function(class, extends)
 	function class:clicked(ev)
 		utils.colorLog("Button/Simple:", "'Trigger' button clicked")
 		self.node.output.Clicked()
-		self.node:syncOut('click', {press = false})
+		self.node:syncOut('click', true)
 	end
 end)
