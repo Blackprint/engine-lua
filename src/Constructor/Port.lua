@@ -171,7 +171,7 @@ function Port:sync()
 		thisNode._bpUpdating = true
 	end
 
-	if thisNode.routes.out and thisNode.iface._enum == Enums.BPFnMain and thisNode.iface.bpInstance.executionOrder.length > 0 then
+	if thisNode.routes.out and thisNode.iface._enum == Enums.BPFnMain and thisNode.iface.bpInstance.executionOrder:isPending() then
 		skipSync = true
 	end
 

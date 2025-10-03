@@ -606,6 +606,7 @@ end
 
 function BPFunctionNode.new(instance)
 	local obj = setmetatable(Node.new(instance), BPFunctionNode)
+	obj.partialUpdate = true -- Trigger this.update(cable) function everytime this node connected to any port that have update
 	local iface = obj:setInterface("BPIC/BP/Fn/Main")
 	iface.type = 'function'
 	iface._enum = Enums.BPFnMain
@@ -687,6 +688,7 @@ registerNode('BP/Fn/Output', function(class, extends)
 		local iface = self:setInterface('BPIC/BP/Fn/Output')
 		iface._enum = Enums.BPFnOutput
 		iface._dynamicPort = true -- Port is initialized dynamically
+		self.partialUpdate = true -- Trigger this.update(cable) function everytime this node connected to any port that have update
 
 		local funcMain = instance.parentInterface
 		iface.parentInterface = funcMain
@@ -887,6 +889,16 @@ function BPFnInOut:addPort(port, customName)
 
 	inputPort._name = refName -- When renaming port, this also need to be changed
 	self:emit("_add." .. name, inputPort)
+
+	-- Code below is used when we dynamically modify function output node inside the function node
+	-- where in a single function we can have multiple output node "BP/Fn/Output"
+	local list = self.parentInterface._proxyOutput
+	for _, item in ipairs(list) do
+		local port = item:createPort('input', name, inputPortType)
+		port._name = inputPort._name
+		self:emit("_add." .. name, port)
+	end
+
 	return inputPort
 end
 

@@ -9,7 +9,7 @@ local Utils = require("@src/Utils.lua")
 local Internal = require("@src/Internal.lua")
 local Port = require("@src/Port/PortFeature.lua")
 local CustomEvent = require("@src/Constructor/CustomEvent.lua")
-local OrderedExecution = require("@src/Constructor/OrderedExecution.lua")
+local ExecutionOrder = require("@src/Constructor/ExecutionOrder.lua")
 local Cable = require("@src/Constructor/Cable.lua")
 local InstanceEvents = require("@src/Constructor/InstanceEvent.lua")
 local Event = require("@src/Event.lua")
@@ -50,7 +50,7 @@ function Engine.new()
 	instance.parentInterface = nil
 	instance.rootInstance = nil
 
-	instance.executionOrder = OrderedExecution.new(instance)
+	instance.executionOrder = ExecutionOrder.new(instance)
 	instance.events = InstanceEvents.new(instance)
 
 	instance._envDeleted = function(data) instance:_envDeletedHandler(data) end
@@ -368,7 +368,7 @@ function Engine:importJSON(json, options)
 
 	self._importing = false
 	self:emit("json.imported", { appendMode = options.appendMode, startIndex = appendLength, nodes = inserted, data = json })
-	Utils.runAsync(self.executionOrder:next())
+	Utils.runAsync(self.executionOrder:start())
 
 	return inserted
 end

@@ -2,11 +2,11 @@ local PortFeature = require("@src/Port/PortFeature.lua")
 local Enums = require("@src/Nodes/Enums.lua")
 local Utils = require("@src/Utils.lua")
 
-local OrderedExecution = {}
-OrderedExecution.__index = OrderedExecution
+local ExecutionOrder = {}
+ExecutionOrder.__index = ExecutionOrder
 
-function OrderedExecution.new(instance, size)
-	local this = setmetatable({}, OrderedExecution)
+function ExecutionOrder.new(instance, size)
+	local this = setmetatable({}, ExecutionOrder)
 	this.instance = instance
 	this.initialSize = size or 30
 	this.list = {}
@@ -14,12 +14,14 @@ function OrderedExecution.new(instance, size)
 		this.list[i] = nil
 	end
 	this.index = 0
-	this.length = 0
+	this.lastIndex = 0
 	this.stop = false
 	this.pause = false
 	this.stepMode = false
 	this._processing = false
 	this._rootExecOrder = { stop = false }
+	this._lockNext = false
+	this._nextLocked = false
 
 	-- Pending because stepMode
 	this._pRequest = {}
@@ -35,29 +37,31 @@ function OrderedExecution.new(instance, size)
 	return this
 end
 
-function OrderedExecution:isPending(node)
+function ExecutionOrder:isPending(node)
+	if self.index == self.lastIndex then return false end
+	if node == nil then return true end
 	return self.list[node] ~= nil
 end
 
-function OrderedExecution:clear()
+function ExecutionOrder:clear()
 	local list = self.list
-	for i = self.index, self.length do
+	for i = self.index, self.lastIndex do
 		list[i] = nil
 	end
 
-	self.length = 0
+	self.lastIndex = 0
 	self.index = 0
 end
 
-function OrderedExecution:add(node, _cable)
+function ExecutionOrder:add(node, _cable)
 	if self.stop or self._rootExecOrder.stop or self:isPending(node) then
 		return
 	end
 
 	self:_isReachLimit()
 
-	self.list[self.length + 1] = node
-	self.length = self.length + 1
+	self.list[self.lastIndex + 1] = node
+	self.lastIndex = self.lastIndex + 1
 
 	if self.stepMode then
 		if _cable then self:_tCableAdd(node, _cable) end
@@ -65,7 +69,7 @@ function OrderedExecution:add(node, _cable)
 	end
 end
 
-function OrderedExecution:_tCableAdd(node, cable)
+function ExecutionOrder:_tCableAdd(node, cable)
 	if self.stop or self._rootExecOrder.stop then
 		return
 	end
@@ -80,18 +84,18 @@ function OrderedExecution:_tCableAdd(node, cable)
 	sets[cable] = true
 end
 
-function OrderedExecution:_isReachLimit()
+function ExecutionOrder:_isReachLimit()
 	local i = self.index + 1
-	if i >= self.initialSize or self.length >= self.initialSize then
+	if i >= self.initialSize or self.lastIndex >= self.initialSize then
 		Utils.throwError("Execution order limit was exceeded")
 	end
 end
 
-function OrderedExecution:_next()
+function ExecutionOrder:_next()
 	if self.stop or self._rootExecOrder.stop then
 		return
 	end
-	if self.index >= self.length then
+	if self.index >= self.lastIndex then
 		return
 	end
 
@@ -104,15 +108,15 @@ function OrderedExecution:_next()
 		self._tCable[temp] = nil
 	end
 
-	if self.index >= self.length then
+	if self.index >= self.lastIndex then
 		self.index = 0
-		self.length = 0
+		self.lastIndex = 0
 	end
 
 	return temp
 end
 
-function OrderedExecution:_emitPaused(afterNode, beforeNode, triggerSource, cable, cables)
+function ExecutionOrder:_emitPaused(afterNode, beforeNode, triggerSource, cable, cables)
 	self.instance:_emit('execution.paused', {
 		afterNode = afterNode,
 		beforeNode = beforeNode,
@@ -122,7 +126,7 @@ function OrderedExecution:_emitPaused(afterNode, beforeNode, triggerSource, cabl
 	})
 end
 
-function OrderedExecution:_addStepPending(cable, triggerSource)
+function ExecutionOrder:_addStepPending(cable, triggerSource)
 	if self.stop or self._rootExecOrder.stop then
 		return
 	end
@@ -173,7 +177,7 @@ function OrderedExecution:_addStepPending(cable, triggerSource)
 end
 
 -- For step mode
-function OrderedExecution:_emitNextExecution(afterNode)
+function ExecutionOrder:_emitNextExecution(afterNode)
 	if self.stop or self._rootExecOrder.stop then
 		return
 	end
@@ -229,14 +233,14 @@ function OrderedExecution:_emitNextExecution(afterNode)
 	end
 end
 
-function OrderedExecution:_checkExecutionLimit()
+function ExecutionOrder:_checkExecutionLimit()
 	local limit = self.instance._settings and self.instance._settings.singleNodeExecutionLoopLimit
 	if not limit or limit == 0 then
 		self._execCounter = nil
 		return
 	end
 
-	if self.length - self.index == 0 then
+	if self.lastIndex - self.index == 0 then
 		if self._execCounter then
 			self._execCounter = {}
 		end
@@ -271,7 +275,7 @@ function OrderedExecution:_checkExecutionLimit()
 	end
 end
 
-function OrderedExecution:_checkStepPending()
+function ExecutionOrder:_checkStepPending()
 	if self.stop or self._rootExecOrder.stop then
 		return
 	end
@@ -369,8 +373,8 @@ function OrderedExecution:_checkStepPending()
 	return true
 end
 
-function OrderedExecution:next(force)
-	if self.stop or self._rootExecOrder.stop then
+function ExecutionOrder:next(force)
+	if self.stop or self._rootExecOrder.stop or self._nextLocked then
 		return
 	end
 	if self.stepMode then self.pause = true end
@@ -396,9 +400,13 @@ function OrderedExecution:next(force)
 		_proxyInput._bpUpdating = true
 	end
 
+	if self._lockNext then
+		self._nextLocked = true
+	end
+
 	local success, err = pcall(function()
 		if next.partialUpdate then
-			local portList = nextIface.input._portList
+			local portList = nextIface.input
 			for _, inp in ipairs(portList) do
 				if inp.feature == PortFeature.ArrayOf then
 					if inp._hasUpdate then
@@ -440,18 +448,36 @@ function OrderedExecution:next(force)
 		next._bpUpdating = false
 		if _proxyInput then _proxyInput._bpUpdating = false end
 
-		if not next.partialUpdate and not skipUpdate then
-			next:_bpUpdate()
+		if not skipUpdate then
+			if not next.partialUpdate then
+				next:_bpUpdate()
+			elseif next.bpFunction then
+				next.iface.bpInstance.executionOrder:start()
+			end
 		end
 	end)
 
 	if not success then
 		if _proxyInput then _proxyInput._bpUpdating = false end
 		self:clear()
+		self._nextLocked = false
 		Utils.throwError(err)
 	end
 
+	self._nextLocked = false
 	if self.stepMode then self:_emitNextExecution(next) end
 end
 
-return OrderedExecution
+function ExecutionOrder:start()
+	if self.stop or self._rootExecOrder.stop or self._nextLocked or self.pause then
+		return
+	end
+
+	self._lockNext = true
+	for i = self.index, self.lastIndex - 1 do
+		self:next()
+	end
+	self._lockNext = false
+end
+
+return ExecutionOrder
