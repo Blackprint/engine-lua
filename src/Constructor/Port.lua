@@ -288,6 +288,10 @@ function Port:assignType(type_)
 		Utils.throwError("Can only assign type to port with 'Slot' type, this port already has type")
 	end
 
+	if type_ == Types.Trigger and self.source == 'input' then
+		Utils.throwError("Trigger type can only be assigned to input port with PortFeature.Trigger")
+	end
+
 	-- Skip if the assigned type is also Slot type
 	if type_ == Types.Slot then return end
 

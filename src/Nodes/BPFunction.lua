@@ -824,6 +824,7 @@ function BPFnInOut:addPort(port, customName)
 	local nodeB = nil
 	local refName = nil
 	local portType = nil
+	local inputPortType = nil
 
 	-- nodeA, nodeB # Main (input) . Input (output), Output (input) . Main (output)
 	if self.type == 'bp-fn-input' then -- Main (input) . Input (output):
@@ -841,7 +842,14 @@ function BPFnInOut:addPort(port, customName)
 		refName = PortName.new(name)
 
 		portType = getFnPortType(port, 'input', self, refName)
-		nodeA.bpFunction.input[name] = portType
+
+		if portType == Types.Trigger then
+			inputPortType = PortFeature.Trigger(function(_port) _port.iface._proxyInput.output[refName.name]() end)
+		else
+			inputPortType = portType
+		end
+
+		nodeA.bpFunction.input[name] = inputPortType
 
 	else -- Output (input) . Main (output)
 		local inc = 1
@@ -858,17 +866,18 @@ function BPFnInOut:addPort(port, customName)
 		refName = PortName.new(name)
 
 		portType = getFnPortType(port, 'output', self, refName)
-		nodeB.bpFunction.output[name] = portType
+
+		if port.type == Types.Trigger then
+			inputPortType = PortFeature.Trigger(function(_port) _port.iface.parentInterface.node.output[refName.name]() end)
+		else
+			inputPortType = portType
+		end
+
+		nodeB.bpFunction.output[name] = inputPortType
 	end
 
 	local outputPort = nodeB:createPort('output', name, portType)
-	local inputPort = nil
-
-	if portType == Types.Trigger then
-		inputPort = nodeA:createPort('input', name, PortFeature.Trigger(function(port) outputPort:_callAll() end))
-	else
-		inputPort = nodeA:createPort('input', name, portType)
-	end
+	local inputPort = nodeA:createPort('input', name, inputPortType)
 
 	if self.type == 'bp-fn-input' then
 		outputPort._name = refName -- When renaming port, this also need to be changed

@@ -14,6 +14,10 @@ function Node.new(instance)
 	local node = setmetatable(CustomEvent.new(), Node)
 	node.instance = instance
 	node._constructed = true
+
+	-- If enabled, syncIn will have 3 parameter, and syncOut will be send to related node in other function instances
+	node.allowSyncToAllFunction = false
+
 	return node
 end
 
@@ -211,7 +215,9 @@ end
 
 -- Sync data out
 function Node:syncOut(id, data, force)
-	self:_syncToAllFunction(id, data)
+	if self.allowSyncToAllFunction then
+		self:_syncToAllFunction(id, data)
+	end
 
 	local instance = self.instance
 	if instance.rootInstance then

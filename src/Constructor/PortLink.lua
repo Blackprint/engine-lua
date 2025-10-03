@@ -247,6 +247,10 @@ function PortLink:_add(portName, val)
 		end
 	end
 
+	if val == Types.Trigger and self._which == 'input' then
+		Utils.throwError("Trigger type can only be assigned to input port with PortFeature.Trigger")
+	end
+
 	local iPort = self._ifacePort
 
 	if iPort[portName] then
