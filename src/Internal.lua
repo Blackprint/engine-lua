@@ -97,10 +97,10 @@ local function registerEvent(namespace, options)
 	end
 
 	-- Validate schema types
-	for _, obj in ipairs(schema) do
+	for key, obj in pairs(schema) do
 		-- Must be a data type or type from Blackprint.Port.{Feature}
 		if type(obj) ~= "table" or (obj.feature == nil and not Types.isType(obj)) then
-			Utils.throwError(string.format("Unsupported schema type for field 'key' in '%s'", namespace))
+			Utils.throwError(string.format("Unsupported schema type for field '%s' in '%s'", key, namespace))
 		end
 	end
 

@@ -53,45 +53,43 @@ function Cable:connecting()
 end
 
 function Cable:_connected()
-	local owner = self.owner
-	local target = self.target
+	local inp = self.input
+	local out = self.output
 	self.connected = true
 
 	-- Skip event emit or node update for route cable connection
 	if self.isRoute then return end
 
-	local temp = {
-		port = owner,
-		target = target,
-		cable = self,
-	}
-	owner:emit('cable.connect', temp)
-	owner.iface:emit('cable.connect', temp)
-
-	local temp2 = {
-		port = target,
-		target = owner,
-		cable = self,
-	}
-	target:emit('cable.connect', temp2)
-	target.iface:emit('cable.connect', temp2)
-
-	if not self.output.value then return end
-
-	local input = self.input
 	local tempEv = {
-		port = input,
-		target = self.output,
+		port = inp,
+		target = out,
 		cable = self,
 	}
-	input:emit('value', tempEv)
-	input.iface:emit('port.value', tempEv)
+	inp:emit('cable.connect', tempEv)
+	inp.iface:emit('cable.connect', tempEv)
 
-	local node = input.iface.node
-	if node.instance._importing then
-		node.instance.executionOrder:add(node, self)
-	elseif #node.routes.inp == 0 then
-		Utils.runAsync(node:_bpUpdate(self))
+	local tempEv2 = {
+		port = out,
+		target = inp,
+		cable = self,
+	}
+	out:emit('cable.connect', tempEv2)
+	out.iface:emit('cable.connect', tempEv2)
+
+	inp.iface.node.instance:emit('cable.connect', tempEv)
+	inp:emit('connect', tempEv)
+	out:emit('connect', tempEv2)
+
+	if self.output.value ~= nil then
+		inp:emit('value', tempEv)
+		inp.iface:emit('port.value', tempEv)
+
+		local node = inp.iface.node
+		if node.instance._importing then
+			node.instance.executionOrder:add(node, self)
+		elseif #node.routes.inp == 0 then
+			Utils.runAsync(node:_bpUpdate(self))
+		end
 	end
 end
 

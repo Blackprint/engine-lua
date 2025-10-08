@@ -7,6 +7,7 @@ function CustomEvent.new(that)
 	local this = that or setmetatable({}, CustomEvent)
 	this._events = {}
 	this._once = {}
+	this._currentEventName = nil
 	return this
 end
 
@@ -94,6 +95,7 @@ end
 function CustomEvent:emit(eventName, data)
 	local events = self._events
 	local once = self._once
+	self._currentEventName = eventName
 
 	if events[eventName] then
 		local evs = events[eventName]
@@ -110,6 +112,8 @@ function CustomEvent:emit(eventName, data)
 
 		once[eventName] = nil
 	end
+
+	self._currentEventName = nil
 end
 
 return CustomEvent

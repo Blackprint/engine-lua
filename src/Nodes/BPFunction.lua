@@ -41,6 +41,7 @@ function BPFunction.new(id, options, instance)
 		obj.structure = options.structure
 	else
 		obj.structure = {
+			_bpStale = false,
 			instance = {
 				['BP/Fn/Input'] = {{i = 0}},
 				['BP/Fn/Output'] = {{i = 1}},
@@ -215,10 +216,10 @@ function BPFunction:_onFuncChanges(eventName, obj, fromNode)
 			if input.iface._bpDestroy or output.iface._bpDestroy then continue end
 
 			local inputIface = nodeInstance.ifaceList[ifaceList:indexOf(input.iface)]
-			if not inputIface then Utils.throwError("Failed to get node input iface index") end
+			if inputIface == -1 then Utils.throwError("Failed to get node input iface index") end
 
 			local outputIface = nodeInstance.ifaceList[ifaceList:indexOf(output.iface)]
-			if not outputIface then Utils.throwError("Failed to get node output iface index") end
+			if outputIface == -1 then Utils.throwError("Failed to get node output iface index") end
 
 			if inputIface.namespace ~= input.iface.namespace then
 				print(inputIface.namespace .. ' != ' .. input.iface.namespace)
@@ -269,7 +270,7 @@ function BPFunction:_onFuncChanges(eventName, obj, fromNode)
 			})
 		elseif eventName == 'node.delete' then
 			local index = fromNode.iface.bpInstance.ifaceList:indexOf(obj.iface)
-			if not index then Utils.throwError("Failed to get node index") end
+			if index == -1 then Utils.throwError("Failed to get node index") end
 
 			local iface = nodeInstance.ifaceList[index]
 			if iface.namespace ~= obj.iface.namespace then
@@ -294,7 +295,7 @@ function BPFunction:createVariable(id, options)
 	if options.scope == VarScope.Private then
 		if not Utils.findFromList(self.privateVars, id) then
 			table.insert(self.privateVars, id)
-			local eventData = {bpFunction = self, scope = VarScope.Private, id = id}
+			local eventData = {scope = VarScope.Private, id = id, bpFunction = self, reference = nil }
 			self:emit('variable.new', eventData)
 			self.rootInstance:emit('variable.new', eventData)
 		end
@@ -320,9 +321,10 @@ function BPFunction:createVariable(id, options)
 	self.variables[id] = temp
 
 	local eventData = {
-		reference = temp,
 		scope = temp._scope,
-		id = temp.id
+		id = temp.id,
+		bpFunction = self,
+		reference = temp,
 	}
 	self:emit('variable.new', eventData)
 	self.rootInstance:emit('variable.new', eventData)
@@ -355,7 +357,7 @@ function BPFunction:renameVariable(from_, to, scopeId)
 		if self.variables[from_] then self.variables[from_] = nil end
 
 		self.rootInstance:emit('variable.renamed', {
-			old = from_, now = to, reference = varObj, scope = scopeId,
+			scope = scopeId, old = from_, now = to, reference = varObj, bpFunction = self
 		})
 	else
 		Utils.throwError("Can't rename variable from scopeId: " .. scopeId)
@@ -412,7 +414,7 @@ function BPFunction:deleteVariable(namespace, scopeId)
 		used[1].bpInstance:deleteVariable(namespace, scopeId)
 
 		-- Delete from all function node instances
-		local eventData = {scope = oldObj._scope, id = oldObj.id, reference = oldObj}
+		local eventData = {scope = oldObj._scope, id = oldObj.id, bpFunction = self}
 		for _, iface in ipairs(used) do
 			iface.bpInstance:emit('variable.deleted', eventData)
 		end
@@ -571,9 +573,10 @@ function BPFunction:addPrivateVars(id)
 		table.insert(self.privateVars, id)
 
 		local evData = {
-			instance = self,
 			scope = VarScope.Private,
 			id = id,
+			bpFunction = self,
+			reference = nil,
 		}
 		self:emit('variable.new', evData)
 		self.rootInstance:emit('variable.new', evData)
@@ -692,7 +695,8 @@ registerNode('BP/Fn/Output', function(class, extends)
 
 		local funcMain = instance.parentInterface
 		iface.parentInterface = funcMain
-		funcMain._proxyOutput = self
+		funcMain._proxyOutput = funcMain._proxyOutput or {}
+		table.insert(funcMain._proxyOutput, self)
 	end
 
 	function class:imported(data)
@@ -760,6 +764,11 @@ registerInterface('BPIC/BP/Fn/Main', function(class, extends)
 
 		bpFunction:refreshPrivateVars(newInstance)
 
+		if bpFunction.structure['_bpStale'] then
+			print(node.iface.namespace .. ": Function structure was stale, this maybe get modified or not re-synced with remote sketch on runtime")
+			error("Unable to create stale function structure");
+		end
+
 		local swallowCopy = {}
 		for k, v in pairs(bpFunction.structure) do swallowCopy[k] = v end
 		newInstance:importJSON(swallowCopy, {clean = false})
@@ -776,8 +785,21 @@ registerInterface('BPIC/BP/Fn/Main', function(class, extends)
 			end
 		end
 
+		local iface = self
 		local function _save(ev, eventName, force)
+			eventName = newInstance._currentEventName
+
 			if force or bpFunction._syncing then return end
+			if iface._bpDestroy then return end
+
+			-- This will be synced by remote sketch as this engine dont have exportJSON
+			bpFunction.structure['_bpStale'] = true
+			-- bpFunction.structure = this.bpInstance.exportJSON({
+			-- 	toRawObject: true,
+			-- 	exportFunctions: false,
+			-- 	exportVariables: false,
+			-- 	exportEvents: false,
+			-- });
 
 			newInstance.rootInstance:emit(eventName, ev)
 

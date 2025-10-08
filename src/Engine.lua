@@ -68,7 +68,10 @@ function Engine:deleteNode(iface)
 	local list = self.ifaceList
 	local i = list:indexOf(iface)
 
-	if i ~= nil then
+	if i ~= -1 then
+		iface._bpDestroy = true
+		local eventData = { iface = iface }
+		self:_emit('node.delete', eventData)
 		list:splice(i, 1)
 	else
 		if self.throwOnError then
@@ -83,13 +86,6 @@ function Engine:deleteNode(iface)
 		})
 	end
 
-	-- iface._bpDestroy = true
-
-	local eventData = {
-		iface = iface
-	}
-	self:_emit('node.delete', eventData)
-
 	iface.node:destroy()
 	iface:destroy()
 
@@ -98,7 +94,7 @@ function Engine:deleteNode(iface)
 		if not iface[val] then continue end
 
 		local portList = iface[val]
-		for portName, port in pairs(portList) do
+		for _, port in pairs(portList) do
 			port:disconnectAll(self._remote ~= nil)
 		end
 	end
@@ -383,12 +379,15 @@ function Engine:settings(which, val)
 end
 
 function Engine:linkVariables(vars)
+	local bpFunction = self.parentInterface and self.parentInterface.node.bpFunction or nil
+
 	for _, temp in ipairs(vars) do
 		Utils.setDeepProperty(self.variables, Utils._stringSplit(temp.id, '/'), temp)
 		self:_emit('variable.new', {
-			reference = temp,
 			scope = temp._scope,
 			id = temp.id,
+			bpFunction = bpFunction,
+			reference = temp,
 		})
 	end
 end
@@ -539,11 +538,13 @@ function Engine:createVariable(id, options)
 	local temp = BPVariable.new(id, options)
 	Utils.setDeepProperty(self.variables, ids, temp)
 
+	local bpFunction = self.parentInterface and self.parentInterface.node.bpFunction or nil
 	temp._scope = VarScope.Public
 	self:_emit('variable.new', {
-		reference = temp,
 		scope = temp._scope,
 		id = temp.id,
+		bpFunction = bpFunction,
+		reference = temp,
 	})
 
 	return temp
@@ -592,12 +593,13 @@ function Engine:renameVariable(from_, to, scopeId)
 	Utils.deleteDeepProperty(varsObject, ids, true)
 	Utils.setDeepProperty(varsObject, ids2, oldObj)
 
+	local bpFunction = self.parentInterface and self.parentInterface.node.bpFunction or nil
 	if scopeId == VarScope.Private then
 		instance:_emit('variable.renamed', {
-			old = from_, now = to, bpFunction = self.parentInterface.node.bpFunction, scope = scopeId
+			scope = scopeId, old = from_, now = to, bpFunction = bpFunction, reference = nil
 		})
 	else
-		instance:_emit('variable.renamed', { old = from_, now = to, reference = oldObj, scope = scopeId })
+		instance:_emit('variable.renamed', { scope = scopeId, old = from_, now = to, bpFunction = bpFunction, reference = oldObj })
 	end
 end
 
@@ -620,7 +622,7 @@ function Engine:deleteVariable(namespace, scopeId)
 	local bpFunction = self.parentInterface and self.parentInterface.node.bpFunction or nil
 
 	Utils.deleteDeepProperty(varsObject, path, true)
-	self:_emit('variable.deleted', { scope = scopeId, id = oldObj.id, reference = oldObj, bpFunction = bpFunction })
+	self:_emit('variable.deleted', { scope = scopeId, id = oldObj.id, bpFunction = bpFunction })
 end
 
 function Engine:createFunction(id, options)

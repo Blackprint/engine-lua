@@ -407,7 +407,7 @@ function ExecutionOrder:next(force)
 	local success, err = pcall(function()
 		if next.partialUpdate then
 			local portList = nextIface.input
-			for _, inp in ipairs(portList) do
+			for _, inp in pairs(portList) do -- Don't use ipairs here, as portList is array/list
 				if inp.feature == PortFeature.ArrayOf then
 					if inp._hasUpdate then
 						inp._hasUpdate = false
