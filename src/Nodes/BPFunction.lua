@@ -316,7 +316,7 @@ function BPFunction:createVariable(id, options)
 	end
 
 	local temp = BPVariable.new(id, options)
-	temp.funcInstance = self
+	temp.bpFunction = self
 	temp._scope = options.scope
 	self.variables[id] = temp
 
