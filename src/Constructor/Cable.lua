@@ -86,6 +86,7 @@ function Cable:_connected()
 
 		local node = inp.iface.node
 		if node.instance._importing then
+			if node.partialUpdate then inp._hasUpdateCable = self end
 			node.instance.executionOrder:add(node, self)
 		elseif #node.routes.inp == 0 then
 			Utils.runAsync(node:_bpUpdate(self))

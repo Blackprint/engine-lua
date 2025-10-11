@@ -8,7 +8,7 @@ local Bit32 = require("@src/LuaUtils/Bit32.lua")
 local Class = require("@src/LuaUtils/Class.lua")
 
 local Interface = {}
-Interface.__index = Class.extends(Interface, CustomEvent)
+Interface.__index = Class._create(Interface, CustomEvent)
 
 function Interface.new(node)
 	local iface = setmetatable(CustomEvent.new(), Interface)

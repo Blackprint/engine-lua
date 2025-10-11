@@ -68,18 +68,16 @@ Blackprint.registerInterface('BPIC/Example/Logger', function(class, extends)
 		self._log = "..."
 	end
 
-	class.root_config = {
-		get = {
-			log = function(iface)
+	class.defineProperty = {
+		log = {
+			get = function(iface)
 				return iface._log
-			end
-		},
-		set = {
-			log = function(iface, val)
+			end,
+			set = function(iface, val)
 				iface._log = val
 				utils.colorLog("Logger (" .. (iface.id or '') .. ") Data:", tostring(val))
 				iface.node:syncOut('log', val)
 			end
-		},
+		}
 	}
 end)

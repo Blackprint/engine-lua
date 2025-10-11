@@ -8,7 +8,7 @@ local Class = require("@src/LuaUtils/Class.lua")
 local Utils = require("@src/Utils.lua")
 
 local Node = {}
-Node.__index = Class.extends(Node, CustomEvent)
+Node.__index = Class._create(Node, CustomEvent)
 
 function Node.new(instance)
 	local node = setmetatable(CustomEvent.new(), Node)
@@ -257,5 +257,6 @@ function Node:request(cable) end
 function Node:initPorts(data) end
 function Node:destroy() end
 function Node:syncIn(id, data, isRemote) end
+function Node:notifyEditorDataChanged() end -- Do nothing, this only required for Blackprint.Sketch
 
 return Node

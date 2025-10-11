@@ -21,7 +21,7 @@ local Array = require("@src/LuaUtils/Array.lua")
 local NodePortList = {'input', 'output'}
 
 local Engine = {}
-Engine.__index = Class.extends(Engine, CustomEvent)
+Engine.__index = Class._create(Engine, CustomEvent)
 
 function Engine.new()
 	local instance = setmetatable(CustomEvent.new(), Engine)

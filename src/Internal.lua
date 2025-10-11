@@ -32,7 +32,7 @@ local function registerNode(namespace, clazz)
 
 	-- Lazy require here to avoid circular deps error
 	local NodeClass = require("@src/Node.lua")
-	clazz = Class.prototype(clazz, NodeClass, require("@src/Constructor/CustomEvent.lua"))
+	clazz = Class._prototype(clazz, NodeClass, require("@src/Constructor/CustomEvent.lua"))
 
 	Internal.nodes[namespace] = {
 		new = function(instance)
@@ -70,7 +70,7 @@ local function registerInterface(templatePath, clazz)
 
 	-- Lazy require here to avoid circular deps error
 	local InterfaceClass = require("@src/Interface.lua")
-	clazz = Class.prototype(clazz, InterfaceClass, require("@src/Constructor/CustomEvent.lua"))
+	clazz = Class._prototype(clazz, InterfaceClass, require("@src/Constructor/CustomEvent.lua"))
 
 	Internal.interface[templatePath] = {
 		new = function(node)
