@@ -164,6 +164,8 @@ end
 
 -- Find an item in a list and return its index
 function Utils.findFromList(list, item)
+	if table.find then return table.find(list, item) end -- Only exist in Luau/Roblox
+
 	for i, val in ipairs(list) do
 		if val == item then
 			return i

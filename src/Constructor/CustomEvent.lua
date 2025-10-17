@@ -51,16 +51,16 @@ function CustomEvent:off(eventName, func)
 		return
 	end
 
-	if self._events[eventName] then
-		local _events = self._events[eventName]
+	local _events = self._events[eventName]
+	if _events then
 		local i = Utils.findFromList(_events, func)
 		if i then
 			table.remove(_events, i)
 		end
 	end
 
-	if self._once[eventName] then
-		local _once = self._once[eventName]
+	local _once = self._once[eventName]
+	if _once then
 		local i = Utils.findFromList(_once, func)
 		if i then
 			table.remove(_once, i)
@@ -73,16 +73,16 @@ function CustomEvent:emit(eventName, data)
 	local once = self._once
 	self._currentEventName = eventName
 
-	if events[eventName] then
-		local evs = events[eventName]
-		for _, val in ipairs(evs) do
+	local evs1 = events[eventName]
+	if evs1 then
+		for _, val in ipairs(evs1) do
 			val(data)
 		end
 	end
 
-	if once[eventName] then
-		local evs = once[eventName]
-		for _, val in ipairs(evs) do
+	local evs2 = once[eventName]
+	if evs2 then
+		for _, val in ipairs(evs2) do
 			val(data)
 		end
 

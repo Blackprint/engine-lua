@@ -28,16 +28,19 @@ function Class._create(parentA, parentB, parentC, parentD, current_class)
 
 		-- Check getter and setter first
 		if defineProperty ~= nil then
-			local val = defineProperty[key].get
-			if val == true then
-				indexCache[key] = isAccessorDirectGet
-				local _classData = rawget(this, '_classData')
-				if _classData == nil then return end
-				return _classData[key]
-			end
-			if val then
-				indexCache[key] = isRootConfigGetter
-				return val(this) -- Invoke the getter
+			local getter = defineProperty[key]
+			if getter then
+				getter = getter.get
+				if getter == true then
+					indexCache[key] = isAccessorDirectGet
+					local _classData = rawget(this, '_classData')
+					if _classData == nil then return end
+					return _classData[key]
+				end
+				if getter then
+					indexCache[key] = isRootConfigGetter
+					return getter(this) -- Invoke the getter
+				end
 			end
 		end
 
@@ -93,7 +96,7 @@ function Class._prototype(func, parentC, parentD)
 		class.__newindex = function(this, key, val)
 			local prop = defineProperty[key]
 			if prop and prop.set then
-				local retVal = prop(this, val) -- Invoke the setter
+				local retVal = prop.set(this, val) -- Invoke the setter
 
 				if prop.get == true then
 					local _classData = rawget(this, '_classData')
