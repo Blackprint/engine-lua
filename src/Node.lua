@@ -158,13 +158,7 @@ function Node:_bpUpdate(cable)
 	if self.update then
 		self._bpUpdating = true
 		local success, result = pcall(function()
-			local temp = self:update(cable)
-			-- Handle async coroutine if needed
-			if type(temp) == "table" and temp.__coroutine then
-				-- Mock coroutine handling
-				return temp
-			end
-			return temp
+			return self:update(cable) -- Handle async if in future is needed
 		end)
 
 		if not success then

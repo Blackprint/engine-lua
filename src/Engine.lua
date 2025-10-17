@@ -740,15 +740,7 @@ function Engine:_onJsonImported()
 end
 
 function Engine:ready()
-	if self._ready then return true end
-	if self._readyPromise then
-		return self._readyPromise
-	end
-
-	self._readyPromise = {}
-	self._readyPromise.set_result = function() end -- Mock future
-	self._readyResolve = function() self._readyPromise.set_result() end
-	return self._readyPromise
+	return true -- There are no async function in Luau, so lets just return immediately
 end
 
 function Engine:changeNodeId(iface, newId)

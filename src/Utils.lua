@@ -177,32 +177,7 @@ Utils._asyncTask = {}
 
 -- Run an async coroutine
 function Utils.runAsync(coroutine)
-	if coroutine == nil then return end
-
-	local success, result = pcall(function()
-		-- Mock coroutine creation for now
-		-- In a real implementation, you'd use a proper coroutine library
-		local task = {
-			coroutine = coroutine,
-			add_done_callback = function(self, callback)
-				-- Mock task completion
-				callback()
-			end
-		}
-		table.insert(Utils._asyncTask, task)
-		task:add_done_callback(function()
-			for i, t in ipairs(Utils._asyncTask) do
-				if t == task then
-					table.remove(Utils._asyncTask, i)
-					break
-				end
-			end
-		end)
-	end)
-
-	if not success then
-		print("Error in async task: " .. tostring(result))
-	end
+	return -- Luau doesn't use async function like Python
 end
 
 -- Patch an old class with new class methods

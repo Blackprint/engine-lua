@@ -33,31 +33,7 @@ function CustomEvent:once(eventName, func)
 end
 
 function CustomEvent:waitOnce(eventName)
-	-- Mock async future for Lua
-	local future = {
-		_result = nil,
-		_callbacks = {}
-	}
-
-	function future:setResult(result)
-		self._result = result
-		for _, callback in ipairs(self._callbacks) do
-			callback(result)
-		end
-	end
-
-	function future:thenDo(callback)
-		if self._result then
-			callback(self._result)
-		else
-			table.insert(self._callbacks, callback)
-		end
-	end
-
-	local function func(ev) future:setResult(ev) end
-	self:on(eventName, func, true)
-
-	return future
+	error(".waitOnce: Currently not implemented")
 end
 
 function CustomEvent:off(eventName, func)
