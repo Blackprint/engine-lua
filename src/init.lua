@@ -14,6 +14,7 @@ local Node = require("@src/Node.lua")
 local Interface = require("@src/Interface.lua")
 local Engine = require("@src/Engine.lua")
 local PortGhost = require("@src/PortGhost.lua")
+local Tools = require("@src/Tools.lua")
 
 -- Export all modules
 _G.Blackprint = {
@@ -38,6 +39,7 @@ _G.Blackprint = {
 	InputPort = PortGhost.InputPort,
 
 	VarScope = require("@src/Nodes/BPVariable.lua").VarScope,
+	Tools = Tools,
 
 	LuaUtils = {
 		Class = require("@src/LuaUtils/Class.lua"),
