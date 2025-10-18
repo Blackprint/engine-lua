@@ -68,9 +68,10 @@ function Engine:deleteNode(iface)
 	local list = self.ifaceList
 	local i = list:indexOf(iface)
 
+	iface._bpDestroy = true
+	local eventData = { iface = iface }
+
 	if i ~= -1 then
-		iface._bpDestroy = true
-		local eventData = { iface = iface }
 		self:_emit('node.delete', eventData)
 		list:splice(i, 1)
 	else

@@ -178,11 +178,11 @@ function Port:sync()
 	for _, cable in ipairs(cables) do
 		local inp = cable.input
 		if not inp then continue end
-		inp._cache = nil
 
 		if inp._cache and instance.executionOrder.stepMode then
 			inp._oldCache = inp._cache
 		end
+		inp._cache = nil
 
 		local inpIface = inp.iface
 		local inpNode = inpIface.node
